@@ -1,0 +1,23 @@
+{
+    "name": "patricknelson/silverstripe-migrations",
+    "description": "SilverStripe Database Migration module. Facilitates atomic database migrations in SilverStripe 3.x",
+    "type": "silverstripe-module",
+    "homepage": "https://github.com/patricknelson/silverstripe-migrations",
+    "keywords": [
+        "silverstripe","database migrations","migrate"
+    ],
+    "license": "MIT",
+    "authors": [
+        {"name": "Patrick Nelson","email": "pat@catchyour.com"}
+    ],
+    "support": {
+        "issues": "https://github.com/patricknelson/silverstripe-migrations/issues"
+    },
+    "require": {
+        "silverstripe/cms": "^3.0.0",
+        "silverstripe/framework": "^3.0.0"
+    },
+    "extra": {
+        "installer-name": "migrations"
+    }
+}
