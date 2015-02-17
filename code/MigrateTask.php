@@ -17,7 +17,7 @@
  *
  * This generates a file like the following, containing the class "Migration_AddingColumnToTable":
  *
- * 		2015_01_01_12345678_name_of_your_migration.php
+ * 		YYYY_MM_DD_HHMMSS_adding_column_to_table.php
  *
  * IMPORTANT: This file will be automatically placed in your project directory in the path "<project>/code/migrations".
  * This can be overridden by defining an absolute path in the constant "MIGRATION_PATH" in your _ss_environment.php file.
