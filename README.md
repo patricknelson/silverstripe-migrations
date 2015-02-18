@@ -8,7 +8,7 @@ SilverStripe's database schema is *declarative*, which means that the code defin
 
 ### Composer 
 
-1. Setup composer dependency: `composer require "patricknelson/silverstripe-migrations:dev-master"`
+1. Run `composer require "patricknelson/silverstripe-migrations:dev-master"`
 2. Run `sake dev/build` from the command line to ensure it is properly loaded into SilverStripe.
 
 ### Manual Installation
