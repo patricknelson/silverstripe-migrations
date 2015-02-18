@@ -35,7 +35,17 @@ Using this task, you can do the following:
 3. Make a new migration file for you with boilerplate code. Example:
 	- `sake dev/tasks/MigrateTask make:change_serialize_to_json`
 
-### Writing your migration file
+### How it Works
+
+**Up**
+
+Each time you run an `up` migration, this task will look through all migration files that have been setup in your `<project>/code/migrations` folder (which you can customize) and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration file and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.  
+
+**Down**
+
+When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, they are done in reverse order one batch at a time to help ensure consistency. 
+
+### Writing Migrations
 
 You can simplify the generation of your migration files by running the task with the `make:migration_name` option (switching out `migration_name` with a concise description of your migration using only underscores, letters and numbers). The example in #3 above will generate a file following the format `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `Migration_ChangeSerializeToJson`. It should look like this:
 
@@ -50,19 +60,25 @@ class Migration_ChangeSerializeToJson extends Migration {
 	 * @return void
 	 */
 	public function up() {
-		// TODO: Implement up() method.
+		// Go through each DataObject and convert the column format from serialized to JSON.
+		foreach(MyDataObject::get() as $instance) {
+			$instance->EncodedField = json_encode(unserialize($instance->EncodedField));
+		}
 	}
 
 	/**
-	 * Reverse the migrations.
+	 * Reverse the migration (this does the opposite of the method above).
 	 *
 	 * @return void
 	 */
 	public function down() {
-		// TODO: Implement down() method.
+		// Go through each DataObject and convert the column format back from JSON to serialized again.
+		foreach(MyDataObject::get() as $instance) {
+			$instance->EncodedField = serialize(json_decode($instance->EncodedField));
+		}
 	}
-
 }
+
 ```
 
 **IMPORTANT:** This file will be automatically placed in your project directory in the path `<project>/code/migrations`. This can be overridden by defining an absolute path in the constant `MIGRATION_PATH` in your `_ss_environment.php` file. Migration files that are automatically generated will be pseudo-namespaced with a `Migration_` prefix to help reduce possible class name collisions.
@@ -82,7 +98,7 @@ This will ensure that both the migration classes are available (in the class map
 
 ## Known Issues
 
-Due to the fact that the existing `dev/build` process runs independently from these migrations (instead of being based already on migrations), it is possible that you might end up running migrations that are no longer applicable to the given declared state in your current DataObject `::$db` static definitions. To help avoid issues in more complex websites, setup new migrations to coexist with code that is bundled into release branches and deploy them discretely (e.g. `release-1.2.0` or `hotfix-1.2.1`). The primary goal is to ensure that data/content in existing environments can be retained and changed selectively without losing a column, a table or replacing an entire table or database each time your schema has to change.
+Due to the fact that the existing `dev/build` process runs independently from these migrations (instead of being based already on migrations), it is possible that you might end up running migrations that are no longer applicable to the given declared state in your current DataObject `::$db` static definitions. To help avoid issues in more complex websites, you can either perform checks within the migrations themselves or setup new migrations to coexist with code that is bundled into release branches and deploy them discretely (e.g. `release-1.2.0` or `hotfix-1.2.1`). The primary goal is to ensure that data/content in existing environments can be retained and changed selectively without losing a column, a table or replacing an entire table or database each time your schema has to change.
 
 
 ## To Do
