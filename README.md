@@ -33,16 +33,16 @@ Using this task, you can do the following:
 2. Reverse previous migrations (i.e. "down"). Example:
 	- `sake dev/tasks/MigrateTask down`
 3. Make a new migration file for you with boilerplate code. Example:
-	- `sake dev/tasks/MigrateTask make:adding_column_to_table`
+	- `sake dev/tasks/MigrateTask make:change_serialize_to_json`
 
 ### Writing your migration file
 
-You can simplify the generation of your migration files by running the task with the `make:migration_name` option (switching out `migration_name` with a concise description of your migration using only underscores, letters and numbers). The example in #3 above will generate a file following the format `YYYY_MM_DD_HHMMSS_adding_column_to_table.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `Migration_AddingColumnToTable`. It should look like this:
+You can simplify the generation of your migration files by running the task with the `make:migration_name` option (switching out `migration_name` with a concise description of your migration using only underscores, letters and numbers). The example in #3 above will generate a file following the format `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `Migration_ChangeSerializeToJson`. It should look like this:
 
 ```php
 <?php
 
-class Migration_AddingColumnToTable extends Migration {
+class Migration_ChangeSerializeToJson extends Migration {
 
 	/**
 	 * Run the migrations.

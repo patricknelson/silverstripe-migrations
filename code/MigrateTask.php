@@ -13,11 +13,11 @@
  *
  * 3. Make a new migration file for you with boilerplate code. Example:
  *
- * 		sake dev/tasks/MigrateTask make:adding_column_to_table
+ * 		sake dev/tasks/MigrateTask make:change_serialize_to_json
  *
- * This generates a file like the following, containing the class "Migration_AddingColumnToTable":
+ * This generates a file like the following, containing the class "Migration_ChangeSerializeToJson":
  *
- * 		YYYY_MM_DD_HHMMSS_adding_column_to_table.php
+ * 		YYYY_MM_DD_HHMMSS_change_serialize_to_json.php
  *
  * IMPORTANT: This file will be automatically placed in your project directory in the path "<project>/code/migrations".
  * This can be overridden by defining an absolute path in the constant "MIGRATION_PATH" in your _ss_environment.php file.
