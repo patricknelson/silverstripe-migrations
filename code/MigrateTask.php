@@ -176,8 +176,14 @@ class MigrateTask extends BuildTask {
 			throw new Exception("Cannot write to '$migrationPath'. Please ensure that it is writeable.");
 		}
 
-		// Setup a filename based on the current timestamp with the prefix.
+		// Normalize the base name to strip out unexpected characters.
 		$baseName = strtolower($baseName);
+		$baseName = trim(preg_replace("#[^a-z0-9]+#", "_", $baseName), "_");
+
+		// Ensure a valid base name was provided.
+		if ($baseName === "") throw new Exception("Please provide a valid basename. It can contain only numbers, letters and underscores.");
+
+		// Setup a filename based on the current timestamp with the prefix.
 		$filename = date("Y_m_d_His") . "_" . $baseName . ".php";
 		$filePath = $migrationPath . DIRECTORY_SEPARATOR . $filename;
 
