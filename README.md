@@ -83,3 +83,8 @@ This will ensure that both the migration classes are available (in the class map
 ## Known Issues
 
 Due to the fact that the existing `dev/build` process runs independently from these migrations (instead of being based already on migrations), it is possible that you might end up running migrations that are no longer applicable to the given declared state in your current DataObject `::$db` static definitions. To help avoid issues in more complex websites, setup new migrations to coexist with code that is bundled into release branches and deploy them discretely (e.g. `release-1.2.0` or `hotfix-1.2.1`). The primary goal is to ensure that data/content in existing environments can be retained and changed selectively without losing a column, a table or replacing an entire table or database each time your schema has to change.
+
+
+## To Do
+
+- Setup a `--pretend` option to allow the ability to preview all queries that will be executed by migrations (both up and down). 
