@@ -1,4 +1,4 @@
-# SilverStripe 3.x Database Migrations Module 
+# SilverStripe 3.x Database Migrations
 Facilitates atomic database migrations in SilverStripe 3.x. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module was built to work as an augmentation to the existing `dev/build` that is already commonplace in SilverStripe. 
 
 SilverStripe's database schema is *declarative*, which means that the code defines what the state of the database *currently should be* and therefore the system will do what it needs to do in order to change the current schema to match that declared structure at any given moment (by proxy of `dev/build`). In contrast, database migrations offer a method to *imperatively* define how that structure (as well as the data) should change progressively over time. The advantage to this is that it makes it easier for you to rename columns (while retaining data), combine multiple columns or even change the format of data over time without leaving behind legacy code which should no longer exist, helping keep things tidy.   
@@ -35,12 +35,14 @@ Using this task, you can do the following:
 3. Make a new migration file for you with boilerplate code. Example:
 	- `sake dev/tasks/MigrateTask make:adding_column_to_table`
 
-This generates a file called `YYYY_MM_DD_HHMMSS_adding_column_to_table.php` containing the class `Migration_AddingColumnToTable`. 
+### Writing your migration file
+
+You can simplify the generation of your migration files by running the task with the `make:migration_name` option (switching out `migration_name` with a concise description of your migration using only underscores, letters and numbers). The example in #3 above will generate a file following the format `YYYY_MM_DD_HHMMSS_adding_column_to_table.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `Migration_AddingColumnToTable`. It should look like this:
 
 ```php
 <?php
 
-class MigrationBoilerplate extends Migration {
+class Migration_AddingColumnToTable extends Migration {
 
 	/**
 	 * Run the migrations.
@@ -64,6 +66,18 @@ class MigrationBoilerplate extends Migration {
 ```
 
 **IMPORTANT:** This file will be automatically placed in your project directory in the path `<project>/code/migrations`. This can be overridden by defining an absolute path in the constant `MIGRATION_PATH` in your `_ss_environment.php` file. Migration files that are automatically generated will be pseudo-namespaced with a `Migration_` prefix to help reduce possible class name collisions.
+
+
+### Running Your Migrations
+
+It's important that before you ever migrate `up` or `down` that you make sure you run the SilverStripe `dev/build` task **first**. For example, you could do the following:
+
+```bash
+sake dev/build
+sake dev/tasks/MigrateTask up
+```
+
+This will ensure that both the migration classes are available (in the class map) and that the new fields you've declared in your `DataObject`'s are accessible to your migration.  
 
 
 ## Known Issues
