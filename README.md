@@ -107,4 +107,5 @@ Due to the fact that the existing `dev/build` process runs independently from th
 
 ## To Do
 
+- Method to obtain a hash as a signature for the current schema being defined by `DataObject` child classes. Will be helpful in creating migrations that should only be run if the current schema/state matches a certain hash. 
 - Setup a `--pretend` option to allow the ability to preview all queries that will be executed by migrations (both up and down). 
