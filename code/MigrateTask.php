@@ -47,7 +47,7 @@ class MigrateTask extends BuildTask {
 
 		// Get and pre-process arguments. Format: ["argument" => true, "make" => "filename", ... ]
 		$getVars = $request->getVars();
-		$args = [];
+		$args = array();
 		if (isset($getVars["args"]) && is_array($getVars["args"])) {
 			foreach($getVars["args"] as $arg) {
 				// Separate keys/values.
