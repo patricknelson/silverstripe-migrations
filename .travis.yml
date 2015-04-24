@@ -1,0 +1,38 @@
+language: php 
+
+php:
+  - 5.4
+
+env:
+  global:
+    - CORE_RELEASE=3.1
+    - secure: "LpOrDe+M8YW0itn2LpF8IA0DxBclqFnsVwfo96ec0msCQJ7/rFkXFkOO3e2JeeCVAaBY7r82rwcGW2XDlGB85xOR6DwCE0kXrO12uKKKHSKvqE9NZvQF9eUBirvb9HZ/GKIBa4RkbzTrnn5HvYpykIuhMWis+esky2H1mLx1FmM="
+  matrix:
+    - DB=MYSQL
+    - DB=SQLITE
+    - DB=PGSQL 
+
+matrix:
+  allow_failures:
+    - php: hhvm-nightly
+  include:
+    - php: 5.5
+      env: DB=MYSQL
+    - php: 5.6
+      env: DB=MYSQL
+    - php: 5.4
+      env: DB=MYSQL
+    - php: 5.3
+      env: DB=MYSQL
+    - php: hhvm-nightly
+      env: DB=MYSQL
+
+before_script:
+ - composer self-update
+ - phpenv rehash
+ - git clone git://github.com/silverstripe-labs/silverstripe-travis-support.git ~/travis-support
+ - php ~/travis-support/travis_setup.php --source `pwd` --target ~/builds/ss
+ - cd ~/builds/ss
+
+script: 
+ - vendor/bin/phpunit migrations/tests/
