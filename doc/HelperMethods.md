@@ -46,7 +46,7 @@ array {
 
 #### `(boolean) dropColumnsFromTable(string $table, array $columns)`
 
-Drops columns from a database table. Returns false if the table or any of the columns do not exist. Returns true if the SQL query was executed.
+Drops columns from a database table. Returns array of columns that were dropped.
 
 ```php
 self::dropColumnsFromTable('MyDataObject', ['FieldName', 'OtherField']);
@@ -54,7 +54,7 @@ self::dropColumnsFromTable('MyDataObject', ['FieldName', 'OtherField']);
 
 #### `(boolean) addColumnsToTable(string $table, array $columns)`
 
-Adds columns with the specified properties to a database table if they don't already exist. Returns false if the table does not exist. Returns true if the SQL query was executed.
+Adds columns with the specified properties to a database table, if they don't already exist. Returns array of columns that were added.
 
 ```php
 self::addColumnsToTable('MyDataObject', [
