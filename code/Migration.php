@@ -59,10 +59,10 @@ abstract class Migration {
 	 * Returns an array of columns for a database table
 	 *
 	 * @param string $table
-	 * @return array (empty if table doesn't exist) e.g. ['ColumnName' => 'varchar']
+	 * @return array (empty if table doesn't exist) e.g. array('ColumnName' => 'varchar')
 	 */
 	protected static function getTableColumns($table) {
-		if (!self::tableExists($table)) return [];
+		if (!self::tableExists($table)) return array();
 		return DB::fieldList($table);
 	}
 
@@ -91,7 +91,7 @@ abstract class Migration {
 	 * Returns true if any SQL queries were executed.
 	 *
 	 * @param string $table
-	 * @param array $columns e.g. ['MyColumn' => 'VARCHAR(255) CHARACTER SET utf8']
+	 * @param array $columns e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
 	 * @return boolean
 	 */
 	protected static function addColumnsToTable($table, array $columns) {
@@ -127,7 +127,7 @@ abstract class Migration {
 		if (self::tableColumnExists($table, $field)) {
 			$id = (int) $id;
 			$query = new SQLQuery();
-			$query->setFrom($table)->setSelect([$field])->setWhere("ID = $id");
+			$query->setFrom($table)->setSelect(array($field))->setWhere("ID = $id");
 			$results = $query->execute();
 			if ($results) {
 				foreach ($results as $result) {
@@ -148,10 +148,10 @@ abstract class Migration {
 	 * @param string $table
 	 * @param array $columns
 	 * @param string||int $id
-	 * @return array ['FieldName' => value]
+	 * @return array array('FieldName' => value)
 	 */
 	protected static function getRowValuesFromTable($table, array $fields, $id) {
-		$values = [];
+		$values = array();
 		if (self::tableColumnsExist($table, $fields)) {
 			$id = (int) $id;
 			$query = new SQLQuery();
@@ -177,7 +177,7 @@ abstract class Migration {
 	 * Returns true if the SQL query was executed.
 	 *
 	 * @param string $table
-	 * @param array $values ['FieldName' => value]
+	 * @param array $values array('FieldName' => value)
 	 * @param string||int $id
 	 * @return boolean
 	 */
