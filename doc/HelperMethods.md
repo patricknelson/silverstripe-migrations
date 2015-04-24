@@ -2,7 +2,7 @@
 
 ## Helper Methods
 
-### `(boolean) tableExists(string $table)`
+#### `(boolean) tableExists(string $table)`
 
 Returns true if a table exists in the database.
 
@@ -10,7 +10,7 @@ Returns true if a table exists in the database.
 if (self::tableExists('MyDataObject')) { /*.*/ }
 ```
 
-### `(boolean) tableColumnExists(string $table, string $column)`
+#### `(boolean) tableColumnExists(string $table, string $column)`
 
 Returns true if a single column exists on a database table.
 
@@ -18,7 +18,7 @@ Returns true if a single column exists on a database table.
 if (self::tableColumnExists('MyDataObject', 'FieldName')) { /*.*/ }
 ```
 
-### `(boolean) tableColumnsExist(string $table, array $column)`
+#### `(boolean) tableColumnsExist(string $table, array $column)`
 
 Returns true if an array of columns exist on a database table.
 
@@ -26,7 +26,7 @@ Returns true if an array of columns exist on a database table.
 if (self::tableColumnsExist('MyDataObject', ['FieldName', 'OtherField'])) { /*.*/ }
 ```
 
-### `(array) getTableColumns(string $table)`
+#### `(array) getTableColumns(string $table)`
 
 Returns an array of columns (and their properties) that exist on a database table.
 
@@ -44,7 +44,7 @@ array {
 }
 ```
 
-### `(boolean) dropColumnsFromTable(string $table, array $columns)`
+#### `(boolean) dropColumnsFromTable(string $table, array $columns)`
 
 Drops columns from a database table. Returns false if the table or any of the columns do not exist. Returns true if the SQL query was executed.
 
@@ -52,7 +52,7 @@ Drops columns from a database table. Returns false if the table or any of the co
 self::dropColumnsFromTable('MyDataObject', ['FieldName', 'OtherField']);
 ```
 
-### `(boolean) addColumnsToTable(string $table, array $columns)`
+#### `(boolean) addColumnsToTable(string $table, array $columns)`
 
 Adds columns with the specified properties to a database table if they don't already exist. Returns false if the table does not exist. Returns true if the SQL query was executed.
 
@@ -63,7 +63,7 @@ self::addColumnsToTable('MyDataObject', [
 ]);
 ```
 
-### `(string) getRowValueFromTable(string $table, string $field, int $id)`
+#### `(string) getRowValueFromTable(string $table, string $field, int $id)`
 
 Gets the value for a single column in a row from the database by the ID column. Useful when a field has been removed from the class' `$db` property, and therefore is no longer accessible through the ORM. Returns `null` if the table, column or row does not exist.
 
@@ -75,7 +75,7 @@ var_dump($FieldName);
 string 'Foo'
 ```
 
-### `(array) getRowValuesFromTable(string $table, array $fields, int $id)`
+#### `(array) getRowValuesFromTable(string $table, array $fields, int $id)`
 
 Gets the values for multiple rows on a database table by the ID column. Useful when fields have been removed from the class' `$db` property, and therefore are no longer accessible through the ORM. Returns an empty array if the table, any of the columns or the row do not exist.
 
@@ -90,7 +90,7 @@ array {
 }
 ```
 
-### `(boolean) setRowValuesOnTable(string $table, array $values, int $id)`
+#### `(boolean) setRowValuesOnTable(string $table, array $values, int $id)`
 
 Sets the values for multiple rows on a database table by the ID column. Useful when fields have been removed from the class' `$db` property, and therefore are no longer accessible through the ORM. Returns false if the table or any of the rows do not exist. Returns true if the SQL query was executed.
 
