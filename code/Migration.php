@@ -59,7 +59,7 @@ abstract class Migration {
 	 * Returns an array of columns for a database table
 	 *
 	 * @param string $table
-	 * @return array (empty if table doesn't exist) e.g. array('ColumnName' => 'varchar')
+	 * @return array (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
 	 */
 	protected static function getTableColumns($table) {
 		if (!self::tableExists($table)) return array();
@@ -68,36 +68,36 @@ abstract class Migration {
 
 	/**
 	 * Drops columns from a database table.
-	 * Returns false if the table or if all of the columns do not exist.
-	 * Returns true if any SQL queries were executed.
+	 * Returns array of columns that were dropped
 	 *
 	 * @param string $table
 	 * @param array $columns
-	 * @return boolean
+	 * @return array
 	 */
 	protected static function dropColumnsFromTable($table, array $columns) {
+		$droppedColumns = array();
 		$columnsInTable = array_intersect($columns, array_keys(self::getTableColumns($table)));
-		if (!$columnsInTable) return false;
+		if (!$columnsInTable) return $droppedColumns;
 		$table = Convert::raw2sql($table);
 		foreach ($columnsInTable as $column) {
 			DB::query("ALTER TABLE $table DROP COLUMN " . Convert::raw2sql($column) . ";");
+			$droppedColumns[] = $column;
 		}
-		return true;
+		return $droppedColumns;
 	}
 
 	/**
 	 * Add columns to a database table if they don't exist.
-	 * Returns false if the table does not exist.
-	 * Returns true if any SQL queries were executed.
+	 * Returns array of columns that were added
 	 *
 	 * @param string $table
 	 * @param array $columns e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
-	 * @return boolean
+	 * @return array
 	 */
 	protected static function addColumnsToTable($table, array $columns) {
-		$queried = false;
+		$addedColumns = array();
 		$existingColumns = self::getTableColumns($table);
-		if (!$existingColumns) return $queried;
+		if (!$existingColumns) return $addedColumns;
 		$table = Convert::raw2sql($table);
 		foreach ($columns as $column => $properties) {
 			if (!array_key_exists($column, $existingColumns)) {
@@ -105,10 +105,10 @@ abstract class Migration {
 					"ALTER TABLE $table" . " ADD " . Convert::raw2sql($column)
 					. " " . Convert::raw2sql($properties) . ";"
 				);
-				$queried = true;
+				$addedColumns[] = $column;
 			}
 		}
-		return $queried;
+		return $addedColumns;
 	}
 
 	/**
@@ -182,23 +182,23 @@ abstract class Migration {
 	 * @return boolean
 	 */
 	protected static function setRowValuesOnTable($table, array $values, $id) {
-		$queried = false;
-		if (self::tableColumnsExist($table, array_keys($values))) {
-			$id = (int) $id;
-			$query = "UPDATE " . Convert::raw2sql($table) . " SET";
-			$valuesCount = count($values);
-			$i = 0;
-			foreach ($values as $field => $value) {
-				if (is_string($value)) $value = "'" . Convert::raw2sql($value) . "'";
-				$query .= " " . Convert::raw2sql($field) . " = " . $value;
-				if ($i < $valuesCount - 1) $query .= ",";
-				$i++;
-			}
-			$query .= " WHERE ID = $id;";
-			DB::query($query);
-			$queried = true;
+
+		if (!self::tableColumnsExist($table, array_keys($values))) return false;
+
+		$id = (int) $id;
+		$query = "UPDATE " . Convert::raw2sql($table) . " SET";
+		$valuesCount = count($values);
+		$i = 0;
+		foreach ($values as $field => $value) {
+			if (is_string($value)) $value = "'" . Convert::raw2sql($value) . "'";
+			$query .= " " . Convert::raw2sql($field) . " = " . $value;
+			if ($i < $valuesCount - 1) $query .= ",";
+			$i++;
 		}
-		return $queried;
+		$query .= " WHERE ID = $id;";
+		DB::query($query);
+
+		return true;
 	}
 
 }
