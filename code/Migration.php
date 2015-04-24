@@ -126,6 +126,7 @@ abstract class Migration {
 	protected static function getRowValueFromTable($table, $field, $id) {
 		$value = null;
 		if (self::tableColumnExists($table, $field)) {
+			$id = (int) $id;
 			$query = new SQLQuery();
 			$query->setFrom($table)->setSelect([$field])->setWhere("ID = $id");
 			$results = $query->execute();
@@ -153,6 +154,7 @@ abstract class Migration {
 	protected static function getRowValuesFromTable($table, array $fields, $id) {
 		$values = [];
 		if (self::tableColumnsExist($table, $fields)) {
+			$id = (int) $id;
 			$query = new SQLQuery();
 			$query->setFrom($table)->setSelect($fields)->setWhere("ID = $id");
 			$results = $query->execute();
@@ -183,6 +185,7 @@ abstract class Migration {
 	protected static function setRowValuesOnTable($table, array $values, $id) {
 		$queried = false;
 		if (self::tableColumnsExist($table, array_keys($values))) {
+			$id = (int) $id;
 			$query = "UPDATE $table SET";
 			$valuesCount = count($values);
 			$i = 0;
