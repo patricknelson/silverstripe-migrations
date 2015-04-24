@@ -4,12 +4,9 @@ php:
   - 5.4
 
 env:
-  #global:
-  #  - CORE_RELEASE=3.1
-  #  - "ARTIFACTS_AWS_REGION=us-east-1"
-  #  - "ARTIFACTS_S3_BUCKET=silverstripe-travis-artifacts"
-  #  - secure: "DjwZKhY/c0wXppGmd8oEMiTV0ayfOXiCmi9Lg1aXoSXNnj+sjLmhYwhUWjehjR6IX0MRtzJG6v7V5Y+4nSGe+i+XIrBQnhPQ95Jrkm1gKofX2mznWTl9npQElNS1DXi58NLPbiB3qxHWGFBRAWmRQrsAouyZabkPnChnSa9ldOg="
-  #  - secure: "UmbXCNLK0f2Dk+7qX8bOVcgIt4QhRvccoWvMUxaPtIU+95HCbG10eeCxvfOeBax+tHcRXmeCG4vM4tcuT/WoANkAma/VX74DylFjbWhks2tsKOcr2kjTrOwe6Q9CXOBjVAlcx0lnV/a+w83KARjXGnCrIbE7p7r4EDw31rkVufg="
+  global:
+    - CORE_RELEASE=3.1
+    - secure: "LpOrDe+M8YW0itn2LpF8IA0DxBclqFnsVwfo96ec0msCQJ7/rFkXFkOO3e2JeeCVAaBY7r82rwcGW2XDlGB85xOR6DwCE0kXrO12uKKKHSKvqE9NZvQF9eUBirvb9HZ/GKIBa4RkbzTrnn5HvYpykIuhMWis+esky2H1mLx1FmM="
   matrix:
     - DB=MYSQL
     - DB=SQLITE
