@@ -1,0 +1,16 @@
+DatabaseMigrations:
+  test1:
+    BaseName: 2015_04_27_000637_test1.php
+    MigrationClass: Migration_UnitTestOnly
+    Batch: 1
+    Stamp: 1430107790
+  test2:
+    BaseName: 2015_04_27_000638_test2.php
+    MigrationClass: Migration_UnitTestOnly
+    Batch: 2
+    Stamp: 1430107791
+  test3:
+    BaseName: 2015_04_27_000639_test3.php
+    MigrationClass: Migration_UnitTestOnly
+    Batch: 2
+    Stamp: 1430107792
