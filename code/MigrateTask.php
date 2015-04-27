@@ -36,6 +36,9 @@ class MigrateTask extends BuildTask {
 
 	protected $enabled = true;
 
+	protected $silent = false;
+
+
 	/**
 	 * @param	SS_HTTPRequest $request
 	 */
@@ -218,7 +221,17 @@ class MigrateTask extends BuildTask {
 	 * @param $text
 	 */
 	protected function output($text) {
-		echo "$text\n";
+		if (!$this->silent) echo "$text\n";
+	}
+
+
+	/**
+	 * Squelches output.
+	 *
+	 * @param	bool	$silent
+	 */
+	public function setSilent($silent) {
+		$this->silent = (bool) $silent;
 	}
 
 

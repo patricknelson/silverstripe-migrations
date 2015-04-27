@@ -9,22 +9,24 @@ class MigrateTaskTest extends SapphireTest {
 	 */
 	protected $task;
 
+	public function setUp() {
+		parent::setUp();
+
+		// Initialize task instance, ensure it's quiet.
+		$this->task = new MigrateTask();
+		$this->task->setSilent(true);
+	}
+
 	public function testEnsureWorking() {
 		// Just a generic test to make sure unit testing is working.
 		$task = new MigrateTask();
 		$this->assertContains("migrations", $task->getMigrationPath());
 	}
 
-	protected function getTask() {
-		if (isset($this->task)) return $this->task;
-		return $this->task = new MigrateTask();
-	}
-
-
 	public function testLatestBatch() {
 		// Ensure that there are 2 migrations in the latest batch and 1 before that and that they both will run in the correct order.
 		$this->assertEquals(2, MigrateTask::getLatestBatch());
-		$this->getTask()->down();
+		$this->task->down();
 		$this->assertEquals(1, MigrateTask::getLatestBatch());
 	}
 
