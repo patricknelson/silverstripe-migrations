@@ -29,6 +29,7 @@
  */
 
 class MigrateTask extends BuildTask {
+
 	protected $title = 'Database Migrations (Module)';
 
 	protected $description = 'Performs atomic database migrations.';
