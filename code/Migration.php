@@ -30,6 +30,7 @@ abstract class Migration {
 		return array_key_exists(strtolower($table), $tables);
 	}
 
+
 	/**
 	 * Returns true if a column exists in a database table
 	 *
@@ -43,6 +44,7 @@ abstract class Migration {
 		return array_key_exists($column, $columns);
 	}
 
+
 	/**
 	 * Returns true if an array of columns exist on a database table
 	 *
@@ -55,6 +57,7 @@ abstract class Migration {
 		return count(array_intersect($columns, array_keys(self::getTableColumns($table)))) === count($columns);
 	}
 
+
 	/**
 	 * Returns an array of columns for a database table
 	 *
@@ -65,6 +68,7 @@ abstract class Migration {
 		if (!self::tableExists($table)) return array();
 		return DB::fieldList($table);
 	}
+
 
 	/**
 	 * Drops columns from a database table.
@@ -85,6 +89,7 @@ abstract class Migration {
 		}
 		return $droppedColumns;
 	}
+
 
 	/**
 	 * Add columns to a database table if they don't exist.
@@ -110,6 +115,7 @@ abstract class Migration {
 		}
 		return $addedColumns;
 	}
+
 
 	/**
 	 * Gets the value for a single column in a row from the database by the ID column.
@@ -138,6 +144,7 @@ abstract class Migration {
 		}
 		return $value;
 	}
+
 
 	/**
 	 * Gets the values for multiple rows on a database table by the ID column.
@@ -168,6 +175,7 @@ abstract class Migration {
 		}
 		return $values;
 	}
+
 
 	/**
 	 * Sets the values for multiple rows on a database table by the ID column.
@@ -201,4 +209,37 @@ abstract class Migration {
 		return true;
 	}
 
+
+	/**
+	 * Simplifies publishing of an actual page instance (since migrations are run from command line).
+	 *
+	 * @param Page $page
+	 */
+	public static function publish(Page $page) {
+		static::loginAsAdmin();
+		$page->doPublish();
+	}
+
+
+	/**
+	 * Simplifies UN-publishing of an actual page instance (since migrations are run from command line).
+	 *
+	 * @param Page $page
+	 */
+	public static function unpublish(Page $page) {
+		static::loginAsAdmin();
+		$page->doUnpublish();
+	}
+
+	
+	/**
+	 * Ensures we have permissions to manipulate pages (gets around access issues with global state).
+	 */
+	protected static function loginAsAdmin() {
+		if (!Member::currentUserID()) {
+			Session::start();
+			$admin = Member::default_admin();
+			$admin->logIn();
+		}
+	}
 }
