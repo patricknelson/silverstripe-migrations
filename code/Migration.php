@@ -231,7 +231,7 @@ abstract class Migration {
 		$page->doUnpublish();
 	}
 
-	
+
 	/**
 	 * Ensures we have permissions to manipulate pages (gets around access issues with global state).
 	 */
@@ -239,7 +239,7 @@ abstract class Migration {
 		if (!Member::currentUserID()) {
 			Session::start();
 			$admin = Member::default_admin();
-			$admin->logIn();
+			Session::set("loggedInAs", $admin->ID);
 		}
 	}
 }
