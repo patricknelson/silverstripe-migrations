@@ -242,4 +242,19 @@ abstract class Migration {
 			Session::set("loggedInAs", $admin->ID);
 		}
 	}
+
+
+	/**
+	 * Shorthand to make it easier to update the page type, since SilverStripe has a very specific method for
+	 * accomplishing this.
+	 *
+	 * @param	SiteTree	$page
+	 * @param	string		$pageType
+	 * @throws	MigrationException
+	 */
+	public static function setPageType(SiteTree $page, $pageType) {
+		if (!is_a($pageType, "SiteTree")) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+		$page = $page->newClassInstance($pageType);
+		static::publish($page);
+	}
 }

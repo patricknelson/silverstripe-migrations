@@ -35,6 +35,13 @@ class MigrateTaskTest extends SapphireTest {
 		// TODO: Ensure changes are rolled back in case there is an exception.
 	}
 
+
+	public function testChangePageType() {
+		// TODO: Ensure that page type can be changed properly and is set in both draft/published versions.
+
+		// TODO: Ensure that only "Page" instances are allowed as PageType's.
+	}
+
 }
 
 
