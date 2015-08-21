@@ -41,6 +41,7 @@ class MigrateTask extends BuildTask {
 
 	/**
 	 * @param	SS_HTTPRequest $request
+	 * @throws	MigrationException
 	 */
 	public function run($request) {
 		// Only allow execution from the command line (for simplicity).
@@ -166,7 +167,7 @@ class MigrateTask extends BuildTask {
 	 * Generates a new migration.
 	 *
 	 * @param	string	$baseName
-	 * @throws	Exception
+	 * @throws	MigrationException
 	 */
 	public function make($baseName) {
 		// Get the migration path.
@@ -239,7 +240,7 @@ class MigrateTask extends BuildTask {
 	 * Determines the path to store new migration files.
 	 *
 	 * @return	string
-	 * @throws	Exception
+	 * @throws	MigrationException
 	 */
 	public static function getMigrationPath() {
 		if (defined("MIGRATION_PATH")) {
