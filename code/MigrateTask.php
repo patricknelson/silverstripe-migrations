@@ -66,7 +66,7 @@ class MigrateTask extends BuildTask {
 		// Unfortunately, SilverStripe is not using exceptions for database errors for some reason, so we must
 		// temporarily setup our own global error handler as a stop gap so we can properly handle transactions.
 		set_error_handler(function($errno , $errstr) {
-			throw new Exception($errstr, $errno);
+			throw new MigrationException($errstr, $errno);
 		});
 
 		// Determine action to take. Wrap everything in a transaction so it can be rolled back in case of error.
@@ -82,7 +82,7 @@ class MigrateTask extends BuildTask {
 				$this->make($args["make"]);
 
 			} else {
-				throw new Exception("Invalid or no migration arguments provided. Please specify either: 'up', 'down' or 'make:name_of_your_migration'.");
+				throw new MigrationException("Invalid or no migration arguments provided. Please specify either: 'up', 'down' or 'make:name_of_your_migration'.");
 			}
 
 			// Commit.
@@ -174,10 +174,10 @@ class MigrateTask extends BuildTask {
 
 		// Ensure determine migration path exists and is writable.
 		if (!is_dir($migrationPath)) {
-			throw new Exception("Cannot find the directory '$migrationPath'. Please ensure that it exists and is writeable.");
+			throw new MigrationException("Cannot find the directory '$migrationPath'. Please ensure that it exists and is writeable.");
 
 		} elseif (!is_writeable($migrationPath)) {
-			throw new Exception("Cannot write to '$migrationPath'. Please ensure that it is writeable.");
+			throw new MigrationException("Cannot write to '$migrationPath'. Please ensure that it is writeable.");
 		}
 
 		// Normalize the base name to strip out unexpected characters.
@@ -185,7 +185,7 @@ class MigrateTask extends BuildTask {
 		$baseName = trim(preg_replace("#[^a-z0-9]+#", "_", $baseName), "_");
 
 		// Ensure a valid base name was provided.
-		if ($baseName === "") throw new Exception("Please provide a valid basename. It can contain only numbers, letters and underscores.");
+		if ($baseName === "") throw new MigrationException("Please provide a valid basename. It can contain only numbers, letters and underscores.");
 
 		// Setup a filename based on the current timestamp with the prefix.
 		$filename = date("Y_m_d_His") . "_" . $baseName . ".php";
@@ -197,7 +197,7 @@ class MigrateTask extends BuildTask {
 
 		// Do a quick check to make sure this class doesn't already exist...
 		if (class_exists($camelCase)) {
-			throw new Exception("Cannot automatically generate a migration class called '$camelCase' (derived from '$baseName'), since that class already appears to exist.");
+			throw new MigrationException("Cannot automatically generate a migration class called '$camelCase' (derived from '$baseName'), since that class already appears to exist.");
 		}
 
 		// Get boilerplate file contents, find/replace some contents and write to file path.
@@ -249,7 +249,7 @@ class MigrateTask extends BuildTask {
 		} else {
 			// Attempt to infer this path automatically based on the project name.
 			$project = project();
-			if (empty($project)) throw new Exception("Please either define a global '\$project' variable or define a MIGRATION_PATH constant in order to setup a path for migration files to live.");
+			if (empty($project)) throw new MigrationException("Please either define a global '\$project' variable or define a MIGRATION_PATH constant in order to setup a path for migration files to live.");
 
 			// Build path.
 			$migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, "code", "migrations"));
