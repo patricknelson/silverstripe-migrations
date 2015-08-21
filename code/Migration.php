@@ -213,9 +213,9 @@ abstract class Migration {
 	/**
 	 * Simplifies publishing of an actual page instance (since migrations are run from command line).
 	 *
-	 * @param Page $page
+	 * @param SiteTree $page
 	 */
-	public static function publish(Page $page) {
+	public static function publish(SiteTree $page) {
 		static::loginAsAdmin();
 		$page->doPublish();
 	}
@@ -224,9 +224,9 @@ abstract class Migration {
 	/**
 	 * Simplifies UN-publishing of an actual page instance (since migrations are run from command line).
 	 *
-	 * @param Page $page
+	 * @param SiteTree $page
 	 */
-	public static function unpublish(Page $page) {
+	public static function unpublish(SiteTree $page) {
 		static::loginAsAdmin();
 		$page->doUnpublish();
 	}
