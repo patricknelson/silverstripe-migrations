@@ -22,8 +22,8 @@ abstract class Migration {
 	/**
 	 * Returns true if the table exists in the database
 	 *
-	 * @param string $table
-	 * @return boolean
+	 * @param	string	$table
+	 * @return	boolean
 	 */
 	protected static function tableExists($table) {
 		$tables = DB::tableList();
@@ -34,9 +34,9 @@ abstract class Migration {
 	/**
 	 * Returns true if a column exists in a database table
 	 *
-	 * @param string $table
-	 * @param string $column
-	 * @return boolean
+	 * @param	string	$table
+	 * @param	string	$column
+	 * @return	boolean
 	 */
 	protected static function tableColumnExists($table, $column) {
 		if (!self::tableExists($table)) return false;
@@ -48,9 +48,9 @@ abstract class Migration {
 	/**
 	 * Returns true if an array of columns exist on a database table
 	 *
-	 * @param string $table
-	 * @param array $columns
-	 * @return boolean
+	 * @param	string	$table
+	 * @param	array	$columns
+	 * @return	boolean
 	 */
 	protected static function tableColumnsExist($table, array $columns) {
 		if (!self::tableExists($table)) return false;
@@ -61,8 +61,8 @@ abstract class Migration {
 	/**
 	 * Returns an array of columns for a database table
 	 *
-	 * @param string $table
-	 * @return array (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
+	 * @param	string	$table
+	 * @return	array	(empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
 	 */
 	protected static function getTableColumns($table) {
 		if (!self::tableExists($table)) return array();
@@ -74,9 +74,9 @@ abstract class Migration {
 	 * Drops columns from a database table.
 	 * Returns array of columns that were dropped
 	 *
-	 * @param string $table
-	 * @param array $columns
-	 * @return array
+	 * @param	string	$table
+	 * @param	array	$columns
+	 * @return	array
 	 */
 	protected static function dropColumnsFromTable($table, array $columns) {
 		$droppedColumns = array();
@@ -95,9 +95,9 @@ abstract class Migration {
 	 * Add columns to a database table if they don't exist.
 	 * Returns array of columns that were added
 	 *
-	 * @param string $table
-	 * @param array $columns e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
-	 * @return array
+	 * @param	string	$table
+	 * @param	array 	$columns	e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
+	 * @return	array
 	 */
 	protected static function addColumnsToTable($table, array $columns) {
 		$addedColumns = array();
@@ -123,10 +123,10 @@ abstract class Migration {
 	 * and therefore is no longer accessible through the ORM.
 	 * Returns `null` if the table, column or row does not exist.
 	 *
-	 * @param string $table
-	 * @param string $columns
-	 * @param string||int $id
-	 * @return string
+	 * @param 	string		$table
+	 * @param 	string		$field
+	 * @param 	string|int	$id
+	 * @return	string
 	 */
 	protected static function getRowValueFromTable($table, $field, $id) {
 		$value = null;
@@ -152,10 +152,10 @@ abstract class Migration {
 	 * and therefore are no longer accessible through the ORM.
 	 * Returns an empty array if the table, any of the columns or the row do not exist.
 	 *
-	 * @param string $table
-	 * @param array $columns
-	 * @param string||int $id
-	 * @return array array('FieldName' => value)
+	 * @param	string		$table
+	 * @param	array		$fields
+	 * @param	string|int	$id
+	 * @return	array		array('FieldName' => value)
 	 */
 	protected static function getRowValuesFromTable($table, array $fields, $id) {
 		$values = array();
@@ -184,10 +184,10 @@ abstract class Migration {
 	 * Returns false if the table or any of the rows do not exist.
 	 * Returns true if the SQL query was executed.
 	 *
-	 * @param string $table
-	 * @param array $values array('FieldName' => value)
-	 * @param string||int $id
-	 * @return boolean
+	 * @param	string		$table
+	 * @param	array		$values array('FieldName' => value)
+	 * @param	string|int	$id
+	 * @return	boolean
 	 */
 	protected static function setRowValuesOnTable($table, array $values, $id) {
 
