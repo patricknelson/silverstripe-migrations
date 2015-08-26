@@ -253,7 +253,7 @@ abstract class Migration {
 	 * @throws	MigrationException
 	 */
 	public static function setPageType(SiteTree $page, $pageType) {
-		if (!is_a($pageType, "SiteTree")) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+		if (!is_a($pageType, "SiteTree", true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
 		$page = $page->newClassInstance($pageType);
 		static::publish($page);
 	}
