@@ -94,6 +94,7 @@ class MigrateTask extends BuildTask {
 			DB::getConn()->transactionRollback();
 			$this->output("ERROR (" . $e->getCode() . "): " . $e->getMessage());
 			$this->output("\nNote: Any database changes have been rolled back.");
+			$this->output($e->getTraceAsString());
 		}
 
 		// Revert back to previous error handling.
