@@ -213,22 +213,34 @@ abstract class Migration {
 	/**
 	 * Simplifies publishing of an actual page instance (since migrations are run from command line).
 	 *
-	 * @param SiteTree $page
+	 * @param	SiteTree	$page
+	 * @throws	MigrationException
 	 */
 	public static function publish(SiteTree $page) {
-		static::loginAsAdmin();
-		$page->doPublish();
+		try {
+			static::loginAsAdmin();
+			$page->doPublish();
+
+		} catch(Exception $e) {
+			throw new MigrationException("Cannot publish page: " . $e->getMessage(), 0, $e);
+		}
 	}
 
 
 	/**
 	 * Simplifies UN-publishing of an actual page instance (since migrations are run from command line).
 	 *
-	 * @param SiteTree $page
+	 * @param	SiteTree	$page
+	 * @throws	MigrationException
 	 */
 	public static function unpublish(SiteTree $page) {
-		static::loginAsAdmin();
-		$page->doUnpublish();
+		try {
+			static::loginAsAdmin();
+			$page->doUnpublish();
+
+		} catch(Exception $e) {
+			throw new MigrationException("Cannot unpublish page: " . $e->getMessage(), 0, $e);
+		}
 	}
 
 
@@ -239,6 +251,7 @@ abstract class Migration {
 		if (!Member::currentUserID()) {
 			Session::start();
 			$admin = Member::default_admin();
+			if (!$admin) throw new MigrationException("Cannot login: No default administrator found.");
 			Session::set("loggedInAs", $admin->ID);
 		}
 	}
