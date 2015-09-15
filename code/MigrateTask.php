@@ -38,6 +38,13 @@ class MigrateTask extends BuildTask {
 
 	protected $silent = false;
 
+	protected $error = false;
+
+	protected $shutdown = false;
+
+	// Used for error reporting purposes.
+	protected $lastMigrationFile = '';
+
 
 	/**
 	 * @param	SS_HTTPRequest $request
@@ -70,9 +77,12 @@ class MigrateTask extends BuildTask {
 			throw new MigrationException($errstr, $errno);
 		});
 
+		// Use a shutdown function to help clean up and track final exit status, in case an unexpected fatal error occurs.
+		$this->error = true;
+		register_shutdown_function([$this, "shutdown"]);
+
 		// Determine action to take. Wrap everything in a transaction so it can be rolled back in case of error.
 		DB::getConn()->transactionStart();
-		$error = false;
 		try {
 			if (isset($args["up"])) {
 				$this->up();
@@ -87,21 +97,43 @@ class MigrateTask extends BuildTask {
 				throw new MigrationException("Invalid or no migration arguments provided. Please specify either: 'up', 'down' or 'make:name_of_your_migration'.");
 			}
 
-			// Commit.
+			// Commit and clean up error state..
 			DB::getConn()->transactionEnd();
+			$this->error = false;
 
 		} catch(Exception $e) {
-			// Rollback and notify user.
-			DB::getConn()->transactionRollback();
-			$this->output("ERROR (" . $e->getCode() . "): " . $e->getMessage());
-			$this->output("\nNote: Any database changes have been rolled back.");
-			$this->output($e->getTraceAsString());
-			$error = true;
+			$this->shutdown($e);
 		}
+
+		// Shutdown method below will run next.
+	}
+
+
+	/**
+	 * Will always execute after any/all migrations have run. The purpose of this is to clean up and to handle any
+	 * unexpected errors which may occur.
+	 *
+	 * @param	Exception|null	$e
+	 */
+	public function shutdown(Exception $e = null) {
+		// Run once.
+		if ($this->shutdown) return;
+		$this->shutdown = true;
 
 		// Revert back to previous error handling.
 		restore_error_handler();
-		if ($error) exit(1);
+
+		// If there's an error but no exception, setup an exception now for reporting purposes.
+		if ($this->error && !$e) $e = new MigrationException("The migration" . ($this->lastMigrationFile ? " '$this->lastMigrationFile.php'" : "") . " terminated unexpectedly.");
+		if ($e) {
+			// Rollback database changes and notify user.
+			DB::getConn()->transactionRollback();
+			$this->output("ERROR" . ($e->getCode() != 0 ? " (" . $e->getCode() . ")" : "") . ": " . $e->getMessage());
+			$this->output("\nNote: Any database changes have been rolled back.");
+			$this->output("\nStack Trace:");
+			$this->output($e->getTraceAsString());
+			exit(1);
+		}
 	}
 
 
@@ -123,6 +155,10 @@ class MigrateTask extends BuildTask {
 		// Go through queue now with an updated batch number.
 		$batch = static::getLatestBatch() + 1;
 		foreach($queue as $baseName => $className) {
+			// Keep track of last one to execute (for error reporting purposes).
+			$this->lastMigrationFile = $baseName;
+
+			// Run migration.
 			/* @var $instance Migration */
 			$instance = new $className();
 			$instance->up();
