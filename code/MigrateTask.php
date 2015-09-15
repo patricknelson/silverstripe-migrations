@@ -79,7 +79,7 @@ class MigrateTask extends BuildTask {
 
 		// Use a shutdown function to help clean up and track final exit status, in case an unexpected fatal error occurs.
 		$this->error = true;
-		register_shutdown_function([$this, "shutdown"]);
+		register_shutdown_function(array($this, "shutdown"));
 
 		// Determine action to take. Wrap everything in a transaction so it can be rolled back in case of error.
 		DB::getConn()->transactionStart();
