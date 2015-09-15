@@ -51,7 +51,7 @@ class MigrateTask extends BuildTask {
 	 * @throws	MigrationException
 	 */
 	public function run($request) {
-		// Only allow execution from the command line (for simplicity).
+		// Only allow execution from the command line (for simplicity and security).
 		if (!Director::is_cli()) {
 			echo "<p>Sorry, but this can only be run from the command line.</p>";
 			return;

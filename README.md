@@ -87,7 +87,11 @@ class Migration_ChangeSerializeToJson extends Migration {
 }
 
 ```
-A collection of helper methods are also available on the `Migration` class that perform common database interactions, such as dropping columns from a table or retrieving a value from a column that is no longer available through the ORM but still exists in the database table. Documentation for these helper methods can be found [here](doc/HelperMethods.md).
+A collection of helper methods are also available on the `Migration` class that perform common database interactions, such as dropping columns from a table or retrieving a value from a column that is no longer available through the ORM but still exists in the database table. 
+
+### Helper Methods
+
+Documentation for helper methods can be found [here](doc/HelperMethods.md).
 
 ### Running Your Migrations
 

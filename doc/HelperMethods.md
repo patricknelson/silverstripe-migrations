@@ -2,6 +2,19 @@
 
 ## Helper Methods
 
+#### `(null) publish(SiteTree $page)`
+
+Allows you to publish a page. Useful since SilverStripe requires permissions to publish a page. However...
+
+**WARNING:** Because SilverStripe requires permissions to publish or un-publish a page, the system will temporarily log in as the default administrator in order to run the current batch of migrations if you use this feature. This is only temporary and will go away after the migration has completed. Note also that, from a security standpoint, migrations are setup to only allow access from the command line, so presumably any attacker who could execute migrations could also feasibly read the default admin's username/password from `_ss_environment.php` (if set).  
+
+#### `(null) unpublish(SiteTree $page)`
+
+Allows you to un-publish a page.  
+
+**WARNING:** See warning for `::publish()` above.
+
+
 #### `(boolean) tableExists(string $table)`
 
 Returns true if a table exists in the database.
