@@ -72,6 +72,7 @@ class MigrateTask extends BuildTask {
 
 		// Determine action to take. Wrap everything in a transaction so it can be rolled back in case of error.
 		DB::getConn()->transactionStart();
+		$error = false;
 		try {
 			if (isset($args["up"])) {
 				$this->up();
@@ -95,10 +96,12 @@ class MigrateTask extends BuildTask {
 			$this->output("ERROR (" . $e->getCode() . "): " . $e->getMessage());
 			$this->output("\nNote: Any database changes have been rolled back.");
 			$this->output($e->getTraceAsString());
+			$error = true;
 		}
 
 		// Revert back to previous error handling.
 		restore_error_handler();
+		if ($error) exit(1);
 	}
 
 
