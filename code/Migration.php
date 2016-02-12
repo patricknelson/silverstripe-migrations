@@ -218,8 +218,9 @@ abstract class Migration {
 	 */
 	public static function publish(SiteTree $page) {
 		try {
-			static::loginAsAdmin();
-			$page->doPublish();
+			static::whileAdmin(function() use ($page) {
+				$page->doPublish();
+			});
 
 		} catch(Exception $e) {
 			throw new MigrationException("Cannot publish page: " . $e->getMessage(), 0, $e);
@@ -235,12 +236,61 @@ abstract class Migration {
 	 */
 	public static function unpublish(SiteTree $page) {
 		try {
-			static::loginAsAdmin();
-			$page->doUnpublish();
-
+			static::whileAdmin(function() use ($page) {
+				$page->doUnpublish();
+			});
 		} catch(Exception $e) {
 			throw new MigrationException("Cannot unpublish page: " . $e->getMessage(), 0, $e);
 		}
+	}
+
+
+	/**
+	 * The intent with this function is to allow it to maintain it's own state while allowing you to execute your own
+	 * arbitrary code within that state (i.e. while logged in as an administrator).
+	 *
+	 * Ensures we have permissions to manipulate pages (gets around access issues with global state). Unfortunately, the
+	 * creation of a default admin account below is necessary because SilverStripe will reference global state via
+	 * Member::currentUser() and the only surefire way around this is to login as a default admin with full access.
+	 *
+	 * @param	callable	$closure	The closure (or class/method array) that you'd like to execute while logged in
+	 * 									as an admin.
+	 *
+	 * @throws	MigrationException|Exception
+	 */
+	protected static function whileAdmin(callable $closure) {
+		// Keeps track of the fact that a temporary admin was just created so we can delete it later.
+		$tempAdmin = false;
+		$admin = null;
+
+		if (!Member::currentUserID()) {
+			// See if a default admin is setup yet.
+			if (!Security::has_default_admin()) {
+				// Generate a randomized user/pass and use that as the default administrator just for this session.
+				$tempAdmin = true;
+				$user = substr(str_shuffle(sha1("u" . microtime())), 0, 20);
+				$pass = substr(str_shuffle(sha1("p" . microtime())), 0, 20);
+				Security::setDefaultAdmin($user, $pass);
+			}
+
+			$admin = Member::default_admin();
+			if (!$admin) throw new MigrationException("Cannot login: No default administrator found.");
+
+			Session::start();
+			Session::set("loggedInAs", $admin->ID);
+		}
+
+		// Call passed closure.
+		try {
+			call_user_func($closure);
+		} catch(Exception $e) {}
+
+		// Clean up.
+		Session::set("loggedInAs", null);
+		if ($tempAdmin && $admin) $admin->delete();
+
+		// Throw the exception if one occurred (in lieu of a "finally" block in older PHP versions).
+		if (isset($e)) throw $e;
 	}
 
 
@@ -251,8 +301,12 @@ abstract class Migration {
 	 *
 	 * CAUTION: Since migrations can only be run from the command line, it's assumed that if you're accessing this, then
 	 * you're already an admin or you've got an incorrectly configured site!
+	 *
+	 * TODO: This should be removed soon.
 	 */
 	protected static function loginAsAdmin() {
+		Deprecation::notice('0', 'Use ::whileAdmin() instead. This method will be removed soon.');
+
 		if (!Member::currentUserID()) {
 			// See if a default admin is setup yet.
 			if (!Security::has_default_admin()) {
