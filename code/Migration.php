@@ -214,12 +214,19 @@ abstract class Migration {
 	 * Simplifies publishing of an actual page instance (since migrations are run from command line).
 	 *
 	 * @param	SiteTree	$page
+	 * @param	bool		$force	If set to false, will not publish if the page has a draft version to prevent
+	 * 								accidentally publishing a draft page.
+	 *
+	 * TODO: Possibly change default for $force to false, but will need to start versioning this module to help prevent issues with backward compatibility.
+	 *
 	 * @throws	MigrationException
 	 */
-	public static function publish(SiteTree $page) {
+	public static function publish(SiteTree $page, $force = true) {
 		try {
-			static::whileAdmin(function() use ($page) {
-				$page->doPublish();
+			static::whileAdmin(function() use ($page, $force) {
+				if ($page->isPublished() || $force) {
+					$page->doPublish();
+				}
 			});
 
 		} catch(Exception $e) {
