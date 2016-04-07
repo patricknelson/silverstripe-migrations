@@ -2,22 +2,22 @@
 
 class MigrationBoilerplate extends Migration {
 
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up() {
-		// TODO: Implement up() method.
-	}
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up() {
+        // TODO: Implement up() method.
+    }
 
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down() {
-		// TODO: Implement down() method.
-	}
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down() {
+        // TODO: Implement down() method.
+    }
 
 }
