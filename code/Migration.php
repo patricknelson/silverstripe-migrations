@@ -132,7 +132,7 @@ abstract class Migration {
         $value = null;
         if (self::tableColumnExists($table, $field)) {
             $id = (int)$id;
-            $query = new SQLQuery();
+            $query = new SQLSelect();
             $query->setFrom($table)->setSelect(array($field))->setWhere("ID = $id");
             $results = $query->execute();
             if ($results) {
@@ -161,7 +161,7 @@ abstract class Migration {
         $values = array();
         if (self::tableColumnsExist($table, $fields)) {
             $id = (int)$id;
-            $query = new SQLQuery();
+            $query = new SQLSelect();
             $query->setFrom($table)->setSelect($fields)->setWhere("ID = $id");
             $results = $query->execute();
             if ($results) {
