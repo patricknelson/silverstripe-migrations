@@ -24,7 +24,7 @@
  * Migration files that are automatically generated will be pseudo-namespaced with a "Migration_" prefix to help reduce
  * possible class name collisions.
  *
- * @author    Patrick Nelson, pat@catchyour.com
+ * @author   Patrick Nelson, pat@catchyour.com
  * @since    2015-02-17
  */
 

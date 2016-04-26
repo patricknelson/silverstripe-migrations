@@ -8,7 +8,7 @@
  * @since    2015-02-17
  */
 
-abstract class Migration {
+abstract class Migration implements MigrationInterface {
 
     protected $obsolete = false;
 
