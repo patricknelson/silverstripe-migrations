@@ -161,7 +161,9 @@ class MigrateTask extends BuildTask {
             // Run migration.
             /* @var $instance Migration */
             $instance = new $className();
-            $instance->up();
+            if (!$instance->isObsolete()) {
+                $instance->up();
+            }
 
             // Track this migration.
             $migration = new DatabaseMigrations();
@@ -193,7 +195,9 @@ class MigrateTask extends BuildTask {
         foreach ($lastMigrations as $baseName => $className) {
             /* @var $instance Migration */
             $instance = new $className();
-            $instance->down();
+            if (!$instance->isObsolete()) {
+                $instance->down();
+            }
 
             // Remove this migration from the database now.
             DatabaseMigrations::get()->filter("BaseName", $baseName)->first()->delete();

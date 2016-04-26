@@ -10,9 +10,22 @@
 
 abstract class Migration {
 
+    protected $obsolete = false;
+
     abstract public function up();
 
     abstract public function down();
+
+    /**
+     * Indicates that the migration is no longer relevant or able to be run from scratch due to backward
+     * incompatibilities, which may occur as the codebase changes over time. Useful when wanting to retain old migration
+     * files for reference purposes and consistency.
+     *
+     * @return bool
+     */
+    public function isObsolete() {
+        return $this->obsolete;
+    }
 
 
     #######################################
