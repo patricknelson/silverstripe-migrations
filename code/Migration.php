@@ -239,6 +239,8 @@ abstract class Migration implements MigrationInterface {
             static::whileAdmin(function () use ($page, $force) {
                 if ($page->isPublished() || $force) {
                     $page->doPublish();
+                } else {
+                    $page->write();
                 }
             });
 
