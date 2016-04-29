@@ -360,4 +360,36 @@ abstract class Migration implements MigrationInterface {
         $page = $page->newClassInstance($pageType);
         static::publish($page);
     }
+
+
+    /**
+     * Allows you to easily transition data from one field name to the next. Works with generic data objects as well as
+     * instances of the SiteTree.
+     *
+     * CAUTION: This method is quite abstract, so it could take a very long time to run if you have many objects to
+     * transition, especially SiteTree instances.
+     *
+     * TODO: An issue with SiteTree objects is unpublished instances will not update the currently published version (if one exists).
+     *
+     * @param   DataObject      $dataObject
+     * @param   string          $oldFieldName
+     * @param   string          $newFieldName
+     * @param   callable|null   $transformation
+     * @throws  MigrationException
+     */
+    public static function transitionField(DataObject $dataObject, $oldFieldName, $newFieldName, callable $transformation = null) {
+        // Get and transform data (if applicable).
+        $value = static::getRowValueFromTable(get_class($dataObject), $oldFieldName, $dataObject->ID);
+        if ($transformation) $value = call_user_func($transformation, $value);
+
+        // Set transformed value and save (varies depending on if this is a page or not).
+        $dataObject->setField($newFieldName, $value);
+        if ($dataObject instanceof SiteTree) {
+            // Save + publish update if already published, being careful not to publish if currently unpublished.
+            static::publish($dataObject, false);
+        } else {
+            $dataObject->write();
+        }
+    }
+
 }
