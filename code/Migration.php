@@ -136,10 +136,10 @@ abstract class Migration implements MigrationInterface {
      * and therefore is no longer accessible through the ORM.
      * Returns `null` if the table, column or row does not exist.
      *
-     * @param    string $table
-     * @param    string $field
-     * @param    string|int $id
-     * @return    string
+     * @param   string  $table
+     * @param   string  $field
+     * @param   int     $id
+     * @return  string
      */
     protected static function getRowValueFromTable($table, $field, $id) {
         $value = null;
@@ -305,7 +305,9 @@ abstract class Migration implements MigrationInterface {
         // Call passed closure.
         try {
             call_user_func($closure);
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            // Deferred. Throwing exception below (need to support PHP 5.4, so no "finally").
+        }
 
         // Clean up.
         Session::set("loggedInAs", null);

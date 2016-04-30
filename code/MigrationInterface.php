@@ -13,6 +13,9 @@ interface MigrationInterface {
 
 	public function down();
 
+	/**
+	 * @return bool
+	 */
 	public function isObsolete();
 
 }
