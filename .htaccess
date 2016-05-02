@@ -1,0 +1,2 @@
+# In case you're running Apache and someone attempts to access this directory.
+Deny from all
