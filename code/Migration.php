@@ -422,7 +422,7 @@ abstract class Migration implements MigrationInterface {
      * @param   array|null  $fieldMapping   Array of fields to copy (and ONLY these fields). Can also specify key => value
      *                                      pairs to map between old/new names (instead of just values). Note: Leave
      *                                      empty (or pass null) to automatically assume ALL fields from source table (including ID).
-     * @param   mixed|null  $where          An optional filter passed directly to ->where() method on
+     * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect.
      * @param   bool        $purgeDest      Ensures all data in the DESTINATION table matches the source.
      * @throws  MigrationException
      */
