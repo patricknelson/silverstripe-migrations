@@ -38,7 +38,7 @@ abstract class Migration implements MigrationInterface {
      * @param    string $table
      * @return    boolean
      */
-    protected static function tableExists($table) {
+    public static function tableExists($table) {
         $tables = DB::tableList();
         return array_key_exists(strtolower($table), $tables);
     }
@@ -51,7 +51,7 @@ abstract class Migration implements MigrationInterface {
      * @param    string $column
      * @return    boolean
      */
-    protected static function tableColumnExists($table, $column) {
+    public static function tableColumnExists($table, $column) {
         if (!self::tableExists($table)) return false;
         $columns = self::getTableColumns($table);
         return array_key_exists($column, $columns);
@@ -65,7 +65,7 @@ abstract class Migration implements MigrationInterface {
      * @param    array $columns
      * @return    boolean
      */
-    protected static function tableColumnsExist($table, array $columns) {
+    public static function tableColumnsExist($table, array $columns) {
         if (!self::tableExists($table)) return false;
         return count(array_intersect($columns, array_keys(self::getTableColumns($table)))) === count($columns);
     }
@@ -77,7 +77,7 @@ abstract class Migration implements MigrationInterface {
      * @param    string $table
      * @return    array    (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
      */
-    protected static function getTableColumns($table) {
+    public static function getTableColumns($table) {
         if (!self::tableExists($table)) return array();
         return DB::fieldList($table);
     }
@@ -91,7 +91,7 @@ abstract class Migration implements MigrationInterface {
      * @param    array $columns
      * @return    array
      */
-    protected static function dropColumnsFromTable($table, array $columns) {
+    public static function dropColumnsFromTable($table, array $columns) {
         $droppedColumns = array();
         $columnsInTable = array_intersect($columns, array_keys(self::getTableColumns($table)));
         if (!$columnsInTable) return $droppedColumns;
@@ -112,7 +112,7 @@ abstract class Migration implements MigrationInterface {
      * @param    array $columns e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
      * @return    array
      */
-    protected static function addColumnsToTable($table, array $columns) {
+    public static function addColumnsToTable($table, array $columns) {
         $addedColumns = array();
         $existingColumns = self::getTableColumns($table);
         if (!$existingColumns) return $addedColumns;
@@ -141,7 +141,7 @@ abstract class Migration implements MigrationInterface {
      * @param   int     $id
      * @return  string
      */
-    protected static function getRowValueFromTable($table, $field, $id) {
+    public static function getRowValueFromTable($table, $field, $id) {
         $value = null;
         if (self::tableColumnExists($table, $field)) {
             $id = (int)$id;
@@ -170,7 +170,7 @@ abstract class Migration implements MigrationInterface {
      * @param    string|int $id
      * @return    array        array('FieldName' => value)
      */
-    protected static function getRowValuesFromTable($table, array $fields, $id) {
+    public static function getRowValuesFromTable($table, array $fields, $id) {
         $values = array();
         if (self::tableColumnsExist($table, $fields)) {
             $id = (int)$id;
