@@ -117,9 +117,9 @@ static::setRowValuesOnTable('MyDataObject', [
 
 #### `copyTable($fromTable, $toTable, array $fieldMapping = null, $purgeDest = false, $where = null)`
 
-Copies all values from one table to another. Will override any existing values with matching ID's. Also have the ability to clear out the destination table completely via `$purgeDest`. To prevent copying the entire table, provide a value for `$where` which will be passed directly to ->setWhere() method on `SQLSelect`.
+Copies all values from one table to another. Useful when renaming a `DataObject` or renaming a table since this will allow you to carry over old values and translate between old and new column names (if needed). Will override any existing values with matching ID's. Also have the ability to clear out the destination table completely via `$purgeDest`. To prevent copying the entire table, provide a value for `$where` which will be passed directly to the `->setWhere()` method on `SQLSelect`.
 
-**Note:** When passing a `$fieldMapping`, you can also specify key => value pairs to map between old/new names (instead of just values). Leave empty (or pass null) to automatically assume ALL fields from source table (including ID).
+**Note:** When passing a `$fieldMapping`, you can also specify `key => value` pairs to map between old/new names (instead of just values). Leave empty (or pass null) to automatically assume ALL fields from source table (including ID).
 
 ```php
 $fromTable = 'SourceTable';
