@@ -197,29 +197,46 @@ abstract class Migration implements MigrationInterface {
      * Returns false if the table or any of the rows do not exist.
      * Returns true if the SQL query was executed.
      *
-     * @param    string $table
-     * @param    array $values array('FieldName' => value)
-     * @param    string|int $id
-     * @return    boolean
+     * @param   string      $table
+     * @param   array       $values     Ex: array('FieldName' => value)
+     * @param   int|null    $id         Note: Null only works here if $insert = true.
+     * @param   bool        $insert     Allows insertion of a new record if the ID provided is null or doesn't exist.
+     *                                  NOTE: If an "ID" field is passed, that ID value will be retained.
+     * @return  boolean                 Will return true if anything was changed, false otherwise.
      */
-    protected static function setRowValuesOnTable($table, array $values, $id) {
-
+    public static function setRowValuesOnTable($table, array $values, $id = null, $insert = false) {
+        // TODO: This should maybe throw an exception instead.
         if (!self::tableColumnsExist($table, array_keys($values))) return false;
 
-        $id = (int)$id;
-        $query = "UPDATE " . Convert::raw2sql($table) . " SET";
-        $valuesCount = count($values);
-        $i = 0;
-        foreach ($values as $field => $value) {
-            if (is_string($value)) $value = "'" . Convert::raw2sql($value) . "'";
-            $query .= " " . Convert::raw2sql($field) . " = " . $value;
-            if ($i < $valuesCount - 1) $query .= ",";
-            $i++;
+        // Assume it exists unless we're actually going to allow inserting. Then we'll really check for sure.
+        $exists = true;
+        if ($insert) {
+            // Ensure the ID we're checking now is the same as the one we're inserting to help prevent issues with duplicate keys.
+            $checkID = $id;
+            if (isset($values['ID'])) $checkID = $values['ID'];
+            $select = new SQLSelect('COUNT(*)', $table, ['ID' => $checkID]);
+            $result = $select->execute();
+            $exists = (bool) (int) $result->value();
         }
-        $query .= " WHERE ID = $id;";
-        DB::query($query);
 
-        return true;
+        // Pull out an ID (if applicable).
+        if ($id === null && array_key_exists('ID', $values)) $id = $values['ID'];
+
+        if ($exists) {
+            // Generate an execute an UPDATE query.
+            $update = new SQLUpdate($table, $values, ['ID' => $id]);
+            $update->execute();
+            return true;
+
+        } elseif($insert) {
+            // Generate an INSERT query instead.
+            $insert = new SQLInsert($table, $values);
+            $insert->execute();
+            return true;
+        }
+
+        // Nothing was done.
+        return false;
     }
 
 
@@ -327,6 +344,8 @@ abstract class Migration implements MigrationInterface {
      * you're already an admin or you've got an incorrectly configured site!
      *
      * TODO: This should be removed soon.
+     *
+     * @deprecated  Use ::whileAdmin() instead.
      */
     protected static function loginAsAdmin() {
         Deprecation::notice('0', 'Use ::whileAdmin() instead. This method will be removed soon.');
@@ -392,6 +411,67 @@ abstract class Migration implements MigrationInterface {
         } else {
             $dataObject->write();
         }
+    }
+
+
+    /**
+     * Copies all values from one table to another. Will override any existing values with matching ID's.
+     *
+     * @param   string      $fromTable      Name of SOURCE table to copy values from.
+     * @param   string      $toTable        Name of DESTINATION table to copy values to.
+     * @param   array|null  $fieldMapping   Array of fields to copy (and ONLY these fields). Can also specify key => value
+     *                                      pairs to map between old/new names (instead of just values). Note: Leave
+     *                                      empty (or pass null) to automatically assume ALL fields from source table (including ID).
+     * @param   mixed|null  $where          An optional filter passed directly to ->where() method on
+     * @param   bool        $purgeDest      Ensures all data in the DESTINATION table matches the source.
+     * @throws  MigrationException
+     */
+    public static function copyTable($fromTable, $toTable, array $fieldMapping = null, $purgeDest = false, $where = null) {
+        if (!static::tableExists($fromTable)) throw new MigrationException("Table '$fromTable' does not exist.");
+        if (!static::tableExists($toTable)) throw new MigrationException("Table '$fromTable' does not exist.");
+
+        // Initialize defaults.
+        if ($fieldMapping === null) $fieldMapping = []; // Normalize to empty.
+        if ($fieldMapping === []) {
+            // If empty: Use all fields from the source.
+            $fieldMapping = array_keys(static::getTableColumns($fromTable));
+        }
+
+        // Separate out the source/destination fields from the field mapping to help with selection and validation (correspondingly).
+        $sourceFields = array_map(function($key, $value) {
+            if (!is_numeric($key)) return $key;
+            return $value;
+        }, array_keys($fieldMapping), array_values($fieldMapping));
+        $destFields = array_values($fieldMapping);
+
+        // Validate columns in the destination first and ensure they exist first before moving forward, since you
+        // don't want to perform a DELETE on an entire table unless you're sure the entire operation will complete.
+        $destActualFields = array_keys(self::getTableColumns($toTable));
+        $destFieldDiff = array_diff($destFields, $destActualFields);
+        if (count($destFieldDiff) !== 0) throw new MigrationException("The field(s) '" . join(', ', $destFieldDiff) . "' do not exist in the destination table '$toTable'.");
+
+        // Purge now, if specified.
+        if ($purgeDest) {
+            $delete = new SQLDelete($toTable);
+            $delete->execute();
+        }
+
+        // Begin fetching rows and copying them over now.
+        $select = new SQLSelect($sourceFields, $fromTable);
+        if ($where !== null) $select->setWhere($where);
+        $result = $select->execute();
+        while($sourceRow = $result->next()) {
+            // Convert row fields based on our mapping.
+            $destRow = [];
+            foreach($sourceRow as $field => $value) {
+                if (array_key_exists($field, $fieldMapping)) $field = $fieldMapping[$field];
+                $destRow[$field] = $value;
+            }
+
+            // Update table.
+            static::setRowValuesOnTable($toTable, $destRow, null, true);
+        }
+
     }
 
 }
