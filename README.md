@@ -1,12 +1,12 @@
 # SilverStripe 3.x Database Migrations
-Facilitates atomic database migrations in SilverStripe 3.x. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module was built to work as an augmentation to the existing `dev/build` that is already commonplace in SilverStripe. 
+Facilitates atomic database migrations in SilverStripe 3.x. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module was built to work as an augmentation to the existing `dev/build` that is already commonplace in SilverStripe.
 
-SilverStripe's database schema is *declarative*, which means that the code defines what the state of the database *currently should be* and therefore the system will do what it needs to do in order to change the current schema to match that declared structure at any given moment (by proxy of `dev/build`). In contrast, database migrations offer a method to *imperatively* define how that structure (as well as the data) should change progressively over time. The advantage to this is that it makes it easier for you to rename columns (while retaining data), combine multiple columns or even change the format of data over time without leaving behind legacy code which should no longer exist, helping keep things tidy.   
+SilverStripe's database schema is *declarative*, which means that the code defines what the state of the database *currently should be* and therefore the system will do what it needs to do in order to change the current schema to match that declared structure at any given moment (by proxy of `dev/build`). In contrast, database migrations offer a method to *imperatively* define how that structure (as well as the data) should change progressively over time. The advantage to this is that it makes it easier for you to rename columns (while retaining data), combine multiple columns or even change the format of data over time without leaving behind legacy code which should no longer exist, helping keep things tidy.
 
 
 ## Installation
 
-### Composer 
+### Composer
 
 1. Run `composer require "patricknelson/silverstripe-migrations:dev-master"`
 2. Run `sake dev/build` from the command line to ensure it is properly loaded into SilverStripe.
@@ -40,15 +40,15 @@ Using this task, you can do the following:
 
 **Up**
 
-Each time you run an `up` migration, this task will look through all migration files that have been setup in your `<project>/code/migrations` folder (which you can customize) and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration file and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.  
+Each time you run an `up` migration, this task will look through all migration files that have been setup in your `<project>/code/migrations` folder (which you can customize) and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration file and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.
 
 **Down**
 
-When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, they are done in reverse order one batch at a time to help ensure consistency. 
+When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, they are done in reverse order one batch at a time to help ensure consistency.
 
 ### Writing Migrations
 
-You can easily generate migration files by running the task with the `make:migration_name` option (switching out `migration_name` with a concise description of your migration using only underscores, letters and numbers). 
+You can easily generate migration files by running the task with the `make:migration_name` option (switching out `migration_name` with a concise description of your migration using only underscores, letters and numbers).
 
 **Example:**
 
@@ -87,7 +87,7 @@ class Migration_ChangeSerializeToJson extends Migration {
 }
 
 ```
-A collection of helper methods are also available on the `Migration` class that perform common database interactions, such as dropping columns from a table or retrieving a value from a column that is no longer available through the ORM but still exists in the database table. 
+A collection of helper methods are also available on the `Migration` class that perform common database interactions, such as dropping columns from a table or retrieving a value from a column that is no longer available through the ORM but still exists in the database table.
 
 ### Helper Methods
 
@@ -102,7 +102,7 @@ sake dev/build
 sake dev/tasks/MigrateTask up
 ```
 
-This will ensure that both the migration classes are available (in the class map) and that the new fields you've declared in your `DataObject`'s are accessible to your migration.  
+This will ensure that both the migration classes are available (in the class map) and that the new fields you've declared in your `DataObject`'s are accessible to your migration.
 
 
 ## Known Issues
@@ -112,5 +112,6 @@ Due to the fact that the existing `dev/build` process runs independently from th
 
 ## To Do
 
-- Method to obtain a hash as a signature for the current schema being defined by `DataObject` child classes. Will be helpful in creating migrations that should only be run if the current schema/state matches a certain hash. 
+- Add ability to "prune" database fields and tables, which not only removes defunct fields/tables which are no longer used, but also re-orders them. Would be a highly destructive feature but potentially very helpful if used regularly (and responsibly).
+- Method to obtain a hash as a signature for the current schema being defined by `DataObject` child classes. Will be helpful in creating migrations that should only be run if the current schema/state matches a certain hash.
 - Setup a `--pretend` option to allow the ability to preview all queries that will be executed by migrations (both up and down). 
