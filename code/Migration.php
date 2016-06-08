@@ -214,7 +214,7 @@ abstract class Migration implements MigrationInterface {
             // Ensure the ID we're checking now is the same as the one we're inserting to help prevent issues with duplicate keys.
             $checkID = $id;
             if (isset($values['ID'])) $checkID = $values['ID'];
-            $select = new SQLSelect('COUNT(*)', $table, ['ID' => $checkID]);
+            $select = new SQLSelect('COUNT(*)', $table, array('ID' => $checkID));
             $result = $select->execute();
             $exists = (bool) (int) $result->value();
         }
@@ -224,7 +224,7 @@ abstract class Migration implements MigrationInterface {
 
         if ($exists) {
             // Generate an execute an UPDATE query.
-            $update = new SQLUpdate($table, $values, ['ID' => $id]);
+            $update = new SQLUpdate($table, $values, array('ID' => $id));
             $update->execute();
             return true;
 
@@ -431,11 +431,15 @@ abstract class Migration implements MigrationInterface {
         if (!static::tableExists($toTable)) throw new MigrationException("Table '$fromTable' does not exist.");
 
         // Initialize defaults.
-        if ($fieldMapping === null) $fieldMapping = []; // Normalize to empty.
-        if ($fieldMapping === []) {
+        if ($fieldMapping === null) $fieldMapping = array(); // Normalize to empty.
+        if ($fieldMapping === array()) {
             // If empty: Use all fields from the source.
             $fieldMapping = array_keys(static::getTableColumns($fromTable));
         }
+
+        // Since an ID is required to prevent duplication of data, add it now if it's not already setup.
+        // TODO: Should this be optional?
+        if (!in_array('ID', $fieldMapping)) $fieldMapping[] = 'ID';
 
         // Separate out the source/destination fields from the field mapping to help with selection and validation (correspondingly).
         $sourceFields = array_map(function($key, $value) {
@@ -462,7 +466,7 @@ abstract class Migration implements MigrationInterface {
         $result = $select->execute();
         while($sourceRow = $result->next()) {
             // Convert row fields based on our mapping.
-            $destRow = [];
+            $destRow = array();
             foreach($sourceRow as $field => $value) {
                 if (array_key_exists($field, $fieldMapping)) $field = $fieldMapping[$field];
                 $destRow[$field] = $value;
@@ -471,7 +475,38 @@ abstract class Migration implements MigrationInterface {
             // Update table.
             static::setRowValuesOnTable($toTable, $destRow, null, true);
         }
+    }
 
+
+    /**
+     * Same exact purpose as ::copyTable(), however, also applies changes to other tables associated with versioned
+     * objects. Also, this could be potentially much slower due to the extra tables being copied.
+     *
+     * NOTE: Please see ::copyTable() for more details on the parameters below.
+     *
+     * @param   string      $fromObject     The name of SOURCE versioned object to copy field data from.
+     * @param   string      $toObject       The name of DESTINATION versioned object to copy field data to.
+     * @param   array|null  $fieldMapping
+     * @param   bool        $purgeDest
+     * @param   mixed|null  $where
+     * @throws  MigrationException
+     */
+    public static function copyVersionedTable($fromObject, $toObject, array $fieldMapping = null, $purgeDest = false, $where = null) {
+        // Quick validation.
+        foreach(array($fromObject, $toObject) as $validateObject) {
+            if (!class_exists($validateObject)) throw new MigrationException("'$validateObject' doesn't appear to be an object.");
+            if (is_a($validateObject, 'DataObject')) throw new MigrationException("'$validateObject' must be an instance of DataObject.");
+
+            /** @var $validateInstance DataObject */
+            $validateInstance = singleton($validateObject);
+            if (!$validateInstance->hasExtension('Versioned')) throw new MigrationException("'$validateObject' must be a versioned object (i.e. have the Versioned extension).");
+        }
+
+        // Repeat on each instance of the objects' tables.
+        $suffixes = array('', '_Live', '_versions');
+        foreach($suffixes as $suffix) {
+            self::copyTable($fromObject . $suffix, $toObject . $suffix, $fieldMapping, $purgeDest, $where);
+        }
     }
 
 }

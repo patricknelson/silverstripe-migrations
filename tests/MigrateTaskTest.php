@@ -58,7 +58,7 @@ class MigrateTaskTest extends SapphireTest {
 }
 
 
-class Migration_UnitTestOnly implements TestOnly, MigrationInterface {
+class Migration_UnitTestOnly extends Migration implements TestOnly, MigrationInterface {
 
 	public static $throwException = false;
 
@@ -77,7 +77,7 @@ class Migration_UnitTestOnly implements TestOnly, MigrationInterface {
 	public function isObsolete() {
 		return false;
 	}
-	
+
 	protected static function exceptionator() {
 		if (static::$throwException) throw new Exception("Test exception.");
 	}
