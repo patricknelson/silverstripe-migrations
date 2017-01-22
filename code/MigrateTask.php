@@ -45,7 +45,6 @@ class MigrateTask extends BuildTask {
     // Used for error reporting purposes.
     protected $lastMigrationFile = '';
 
-
     /**
      * @param    SS_HTTPRequest $request
      * @throws    MigrationException
@@ -108,7 +107,6 @@ class MigrateTask extends BuildTask {
         // Shutdown method below will run next.
     }
 
-
     /**
      * Will always execute after any/all migrations have run. The purpose of this is to clean up and to handle any
      * unexpected errors which may occur.
@@ -134,6 +132,15 @@ class MigrateTask extends BuildTask {
             $this->output($e->getTraceAsString());
             exit(1);
         }
+    }
+
+    /**
+     * Ensure it's only visible in the CLI.
+     *
+     * @return bool
+     */
+    public function isEnabled() {
+        return Director::is_cli();
     }
 
 
@@ -177,7 +184,6 @@ class MigrateTask extends BuildTask {
         }
     }
 
-
     /**
      * Reverses the most recent batch of migrations.
      */
@@ -205,7 +211,6 @@ class MigrateTask extends BuildTask {
             $this->output("Reversed: $baseName");
         }
     }
-
 
     /**
      * Generates a new migration.
@@ -269,7 +274,6 @@ class MigrateTask extends BuildTask {
         if (!$this->silent) echo "$text\n";
     }
 
-
     /**
      * Squelches output.
      *
@@ -278,7 +282,6 @@ class MigrateTask extends BuildTask {
     public function setSilent($silent) {
         $this->silent = (bool)$silent;
     }
-
 
     /**
      * Determines the path to store new migration files.
@@ -303,7 +306,6 @@ class MigrateTask extends BuildTask {
         return $migrationPath;
     }
 
-
     /**
      * Returns an array of all possible migration classes that are currently on the filesystem.
      *
@@ -324,7 +326,6 @@ class MigrateTask extends BuildTask {
         return $classesOrdered;
     }
 
-
     /**
      * Returns all already run migrations or only the latest batch (if specified).
      *
@@ -342,7 +343,6 @@ class MigrateTask extends BuildTask {
         }
         return $migrations;
     }
-
 
     /**
      * Returns the number of the latest batch in the database.
