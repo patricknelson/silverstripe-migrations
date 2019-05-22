@@ -35,21 +35,20 @@ abstract class Migration implements MigrationInterface {
     /**
      * Returns true if the table exists in the database
      *
-     * @param    string $table
-     * @return    boolean
+     * @param   string  $table
+     * @return  bool
      */
     public static function tableExists($table) {
         $tables = DB::tableList();
         return array_key_exists(strtolower($table), $tables);
     }
 
-
     /**
      * Returns true if a column exists in a database table
      *
-     * @param    string $table
-     * @param    string $column
-     * @return    boolean
+     * @param   string  $table
+     * @param   string  $column
+     * @return  bool
      */
     public static function tableColumnExists($table, $column) {
         if (!self::tableExists($table)) return false;
@@ -57,39 +56,36 @@ abstract class Migration implements MigrationInterface {
         return array_key_exists($column, $columns);
     }
 
-
     /**
      * Returns true if an array of columns exist on a database table
      *
-     * @param    string $table
-     * @param    array $columns
-     * @return    boolean
+     * @param   string     $table
+     * @param   array      $columns
+     * @return  bool
      */
     public static function tableColumnsExist($table, array $columns) {
         if (!self::tableExists($table)) return false;
         return count(array_intersect($columns, array_keys(self::getTableColumns($table)))) === count($columns);
     }
 
-
     /**
      * Returns an array of columns for a database table
      *
-     * @param    string $table
-     * @return    array    (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
+     * @param   string  $table
+     * @return  array   (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
      */
     public static function getTableColumns($table) {
         if (!self::tableExists($table)) return array();
         return DB::fieldList($table);
     }
 
-
     /**
      * Drops columns from a database table.
      * Returns array of columns that were dropped
      *
-     * @param    string $table
-     * @param    array $columns
-     * @return    array
+     * @param   string     $table
+     * @param   array      $columns
+     * @return  array
      */
     public static function dropColumnsFromTable($table, array $columns) {
         $droppedColumns = array();
@@ -102,15 +98,14 @@ abstract class Migration implements MigrationInterface {
         }
         return $droppedColumns;
     }
-
-
+    
     /**
      * Add columns to a database table if they don't exist.
      * Returns array of columns that were added
      *
-     * @param    string $table
-     * @param    array $columns e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
-     * @return    array
+     * @param   string      $table
+     * @param   array       $columns    e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
+     * @return  array
      */
     public static function addColumnsToTable($table, array $columns) {
         $addedColumns = array();
@@ -128,8 +123,7 @@ abstract class Migration implements MigrationInterface {
         }
         return $addedColumns;
     }
-
-
+    
     /**
      * Gets the value for a single column in a row from the database by the ID column.
      * Useful when a field has been removed from the class' `$db` property,
@@ -158,17 +152,16 @@ abstract class Migration implements MigrationInterface {
         return $value;
     }
 
-
     /**
      * Gets the values for multiple rows on a database table by the ID column.
      * Useful when fields have been removed from the class' `$db` property,
      * and therefore are no longer accessible through the ORM.
      * Returns an empty array if the table, any of the columns or the row do not exist.
      *
-     * @param    string $table
-     * @param    array $fields
-     * @param    string|int $id
-     * @return    array        array('FieldName' => value)
+     * @param    string         $table
+     * @param    array          $fields
+     * @param    string|int     $id
+     * @return   array          array('FieldName' => value)
      */
     public static function getRowValuesFromTable($table, array $fields, $id) {
         $values = array();
@@ -188,8 +181,7 @@ abstract class Migration implements MigrationInterface {
         }
         return $values;
     }
-
-
+    
     /**
      * Sets the values for multiple rows on a database table by the ID column.
      * Useful when fields have been removed from the class' `$db` property,
@@ -202,7 +194,7 @@ abstract class Migration implements MigrationInterface {
      * @param   int|null    $id         Note: Null only works here if $insert = true.
      * @param   bool        $insert     Allows insertion of a new record if the ID provided is null or doesn't exist.
      *                                  NOTE: If an "ID" field is passed, that ID value will be retained.
-     * @return  boolean                 Will return true if anything was changed, false otherwise.
+     * @return  bool                 Will return true if anything was changed, false otherwise.
      */
     public static function setRowValuesOnTable($table, array $values, $id = null, $insert = false) {
         // TODO: This should maybe throw an exception instead.
@@ -238,14 +230,13 @@ abstract class Migration implements MigrationInterface {
         // Nothing was done.
         return false;
     }
-
-
+    
     /**
      * Simplifies publishing of an actual page instance (since migrations are run from command line).
      *
-     * @param    SiteTree $page
-     * @param    bool $force If set to false, will not publish if the page has a draft version to prevent
-     *                                accidentally publishing a draft page.
+     * @param    SiteTree   $page
+     * @param    bool       $force  If set to false, will not publish if the page has a draft version to prevent
+     *                              accidentally publishing a draft page.
      *
      * TODO: Possibly change default for $force to false, but will need to start versioning this module to help prevent issues with backward compatibility.
      *
@@ -266,12 +257,11 @@ abstract class Migration implements MigrationInterface {
         }
     }
 
-
     /**
      * Simplifies UN-publishing of an actual page instance (since migrations are run from command line).
      *
-     * @param    SiteTree $page
-     * @throws    MigrationException
+     * @param   SiteTree            $page
+     * @throws  MigrationException
      */
     public static function unpublish(SiteTree $page) {
         try {
@@ -283,7 +273,6 @@ abstract class Migration implements MigrationInterface {
         }
     }
 
-
     /**
      * The intent with this function is to allow it to maintain it's own state while allowing you to execute your own
      * arbitrary code within that state (i.e. while logged in as an administrator).
@@ -292,8 +281,8 @@ abstract class Migration implements MigrationInterface {
      * creation of a default admin account below is necessary because SilverStripe will reference global state via
      * Member::currentUser() and the only surefire way around this is to login as a default admin with full access.
      *
-     * @param    callable $closure The closure (or class/method array) that you'd like to execute while logged in
-     *                                    as an admin.
+     * @param    callable $closure      The closure (or class/method array) that you'd like to execute while logged in
+     *                                  as an admin.
      *
      * @throws    MigrationException|Exception
      */
@@ -334,7 +323,6 @@ abstract class Migration implements MigrationInterface {
         if (isset($e)) throw $e;
     }
 
-
     /**
      * Ensures we have permissions to manipulate pages (gets around access issues with global state). Unfortunately, the
      * creation of a default admin account below is necessary because SilverStripe will reference global state via
@@ -345,6 +333,7 @@ abstract class Migration implements MigrationInterface {
      *
      * TODO: This should be removed soon.
      *
+     * @throws      MigrationException
      * @deprecated  Use ::whileAdmin() instead.
      */
     protected static function loginAsAdmin() {
@@ -367,7 +356,6 @@ abstract class Migration implements MigrationInterface {
         }
     }
 
-
     /**
      * Shorthand to make it easier to update the page type, since SilverStripe has a very specific method for
      * accomplishing this.
@@ -382,7 +370,6 @@ abstract class Migration implements MigrationInterface {
         static::publish($page);
     }
 
-
     /**
      * Allows you to easily transition data from one field name to the next. Works with generic data objects as well as
      * instances of the SiteTree.
@@ -396,7 +383,7 @@ abstract class Migration implements MigrationInterface {
      * @param   string          $oldFieldName
      * @param   string          $newFieldName
      * @param   callable|null   $transformation
-     * @throws  MigrationException
+     * @throws  MigrationException|ValidationException
      */
     public static function transitionField(DataObject $dataObject, $oldFieldName, $newFieldName, callable $transformation = null) {
         // Get and transform data (if applicable).
@@ -412,7 +399,6 @@ abstract class Migration implements MigrationInterface {
             $dataObject->write();
         }
     }
-
 
     /**
      * Copies all values from one table to another. Will override any existing values with matching ID's.
@@ -476,7 +462,6 @@ abstract class Migration implements MigrationInterface {
             static::setRowValuesOnTable($toTable, $destRow, null, true);
         }
     }
-
 
     /**
      * Same exact purpose as ::copyTable(), however, also applies changes to other tables associated with versioned
