@@ -254,7 +254,7 @@ abstract class Migration implements MigrationInterface {
     public static function publish(SiteTree $page, $force = true) {
         try {
             static::whileAdmin(function () use ($page, $force) {
-                if ($page->isPublished() || $force) {
+                if (!$page->getIsModifiedOnStage() || $force) {
                     $page->doPublish();
                 } else {
                     $page->write();
