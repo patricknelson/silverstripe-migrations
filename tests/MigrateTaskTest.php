@@ -4,6 +4,12 @@ class MigrateTaskTest extends SapphireTest {
 
 	protected static $fixture_file = 'MigrateTaskTest.yml';
 
+    protected $extraDataObjects = [
+        Migration_TestParent::class,
+        Migration_TestChild::class,
+        Migration_TestGrandchild::class,
+    ];
+
 	/**
 	 * @var MigrateTask
 	 */
@@ -30,7 +36,6 @@ class MigrateTaskTest extends SapphireTest {
 		$this->assertEquals(1, MigrateTask::getLatestBatch());
 	}
 
-
 	public function testTransactionRollback() {
 		// TODO: Ensure changes are rolled back in case there is an exception.
 	}
@@ -55,8 +60,13 @@ class MigrateTaskTest extends SapphireTest {
 		// TODO: Make sure values are properly transformed from old -> new
 	}
 
-}
+	public function testGetTableForField() {
+	    $this->assertEquals(Migration_TestParent::class,     Migration::getTableForField(Migration_TestGrandchild::class, 'ParentField'));
+	    $this->assertEquals(Migration_TestChild::class,      Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));
+	    $this->assertEquals(Migration_TestGrandchild::class, Migration::getTableForField(Migration_TestGrandchild::class, 'Grandchild'));
+	}
 
+}
 
 class Migration_UnitTestOnly extends Migration implements TestOnly, MigrationInterface {
 
@@ -81,5 +91,29 @@ class Migration_UnitTestOnly extends Migration implements TestOnly, MigrationInt
 	protected static function exceptionator() {
 		if (static::$throwException) throw new Exception("Test exception.");
 	}
+
+}
+
+class Migration_TestParent extends DataObject implements TestOnly {
+
+    private static $db = [
+        'ParentField' => 'Varchar(255)',
+    ];
+
+}
+
+class Migration_TestChild extends Migration_TestParent implements TestOnly {
+
+    private static $db = [
+        'ChildField' => 'Varchar(255)',
+    ];
+
+}
+
+class Migration_TestGrandchild extends Migration_TestChild implements TestOnly {
+
+    private static $db = [
+        'Grandchild' => 'Varchar(255)',
+    ];
 
 }
