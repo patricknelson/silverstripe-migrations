@@ -80,6 +80,28 @@ abstract class Migration implements MigrationInterface {
     }
 
     /**
+     * Allows to you fetch the specific table (and thus DataObject) that a particular field exists on, since they're
+     * merged at runtime. This will actually iterate through the class ancestry in order to determine the table in which
+     * a field actually exists.
+     *
+     * @param	string	$className
+     * @param	string	$field
+     * @return	string
+     */
+    public static function getTableForField($className, $field) {
+        // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
+        $ancestors = ClassInfo::ancestry($className, true);
+        foreach($ancestors as $ancestor) {
+            if (DataObject::has_own_table($ancestor)) {
+                if (DB::get_schema()->hasField($ancestor, $field)) return $ancestor;
+            }
+        }
+
+        // Still not found.
+        return '';
+    }
+
+    /**
      * Drops columns from a database table.
      * Returns array of columns that were dropped
      *
@@ -98,7 +120,7 @@ abstract class Migration implements MigrationInterface {
         }
         return $droppedColumns;
     }
-    
+
     /**
      * Add columns to a database table if they don't exist.
      * Returns array of columns that were added
@@ -123,7 +145,7 @@ abstract class Migration implements MigrationInterface {
         }
         return $addedColumns;
     }
-    
+
     /**
      * Gets the value for a single column in a row from the database by the ID column.
      * Useful when a field has been removed from the class' `$db` property,
@@ -181,7 +203,7 @@ abstract class Migration implements MigrationInterface {
         }
         return $values;
     }
-    
+
     /**
      * Sets the values for multiple rows on a database table by the ID column.
      * Useful when fields have been removed from the class' `$db` property,
@@ -230,7 +252,7 @@ abstract class Migration implements MigrationInterface {
         // Nothing was done.
         return false;
     }
-    
+
     /**
      * Simplifies publishing of an actual page instance (since migrations are run from command line).
      *
