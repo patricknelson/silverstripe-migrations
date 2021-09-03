@@ -290,6 +290,7 @@ class MigrateTask extends BuildTask {
      * @throws    MigrationException
      */
     public static function getMigrationPath() {
+        // TODO: SSv4: Move to YAML configuration instead.
         if (defined("MIGRATION_PATH")) {
             // Migration path defined by constant.
             $migrationPath = MIGRATION_PATH;
