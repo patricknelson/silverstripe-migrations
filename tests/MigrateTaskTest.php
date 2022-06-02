@@ -22,7 +22,7 @@ class MigrateTaskTest extends SapphireTest {
 
 	protected static $fixture_file = 'MigrateTaskTest.yml';
 
-    protected $extraDataObjects = [
+    protected $extra_dataobjects = [
         Migration_TestParent::class,
         Migration_TestChild::class,
         Migration_TestGrandchild::class,
