@@ -24,8 +24,5 @@
     },
     "require-dev": {
         "sminnee/phpunit": "^5.7.29"
-    },
-    "extra": {
-        "installer-name": "migrations"
     }
 }
