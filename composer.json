@@ -15,8 +15,8 @@
     },
     "autoload": {
         "psr-4": {
-            "SilverStripe\\Migrations\\": "code/",
-            "SilverStripe\\Migrations\\Tests\\": "tests/"
+            "PattricNelson\\SilverStripeMigrations\\": "code/",
+            "PattricNelson\\SilverStripeMigrations\\Tests\\": "tests/"
         }
     },
     "require": {
