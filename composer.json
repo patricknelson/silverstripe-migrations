@@ -1,7 +1,7 @@
 {
     "name": "patricknelson/silverstripe-migrations",
     "description": "SilverStripe Database Migration module. Facilitates atomic database migrations in SilverStripe 3.x",
-    "type": "silverstripe-module",
+    "type": "silverstripe-vendormodule",
     "homepage": "https://github.com/patricknelson/silverstripe-migrations",
     "keywords": [
         "silverstripe","database migrations","migrate"
