@@ -1,5 +1,10 @@
 <?php
 
+namespace Silverstripe\Migrations;
+
+
+
+
 class MigrationBoilerplate extends Migration {
 
     /**

@@ -1,5 +1,12 @@
 <?php
 
+namespace Silverstripe\Migrations;
+
+
+use SilverStripe\ORM\DataObject;
+
+
+
 /**
  * DataObject used to keep track of previously run migrations.
  *

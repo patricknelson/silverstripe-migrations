@@ -1,5 +1,10 @@
 <?php
 
+namespace Silverstripe\Migrations;
+
+
+
+
 /**
  * Needed for consistency between unit tests and actual migrations.
  *

@@ -1,5 +1,22 @@
 <?php
 
+namespace Silverstripe\Migrations;
+
+
+
+
+use Exception;
+
+use ReflectionClass;
+use SilverStripe\Control\Director;
+use SilverStripe\ORM\DB;
+use Silverstripe\Migrations\MigrationBoilerplate;
+use SilverStripe\Core\Manifest\ClassLoader;
+use Silverstripe\Migrations\Migration;
+use SilverStripe\Dev\BuildTask;
+
+
+
 /**
  * Task which allows you to do the following:
  *
@@ -253,7 +270,7 @@ class MigrateTask extends BuildTask {
         // Get boilerplate file contents, find/replace some contents and write to file path.
         $sourceFile = __DIR__ . DIRECTORY_SEPARATOR . "MigrationBoilerplate.php";
         $sourceData = file_get_contents($sourceFile);
-        $sourceData = str_replace("MigrationBoilerplate", $camelCase, $sourceData);
+        $sourceData = str_replace(MigrationBoilerplate::class, $camelCase, $sourceData);
         file_put_contents($filePath, $sourceData);
 
         // Output status and exit.
@@ -314,8 +331,8 @@ class MigrateTask extends BuildTask {
      */
     public static function getAllMigrations() {
         // Get all descendants of the abstract "Migration" class but ensure the class "MigrationBoilerplate" is skipped.
-        $manifest = SS_ClassLoader::instance()->getManifest();
-        $classes = array_diff($manifest->getDescendantsOf("Migration"), array("MigrationBoilerplate"));
+        $manifest = ClassLoader::instance()->getManifest();
+        $classes = array_diff($manifest->getDescendantsOf(Migration::class), array(MigrationBoilerplate::class));
         $classesOrdered = array();
         foreach ($classes as $className) {
             // Get actual filename of migration class and use that as the key.

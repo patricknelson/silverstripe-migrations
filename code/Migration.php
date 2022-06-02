@@ -1,5 +1,38 @@
 <?php
 
+namespace Silverstripe\Migrations;
+
+
+
+
+
+
+
+
+
+use Exception;
+
+
+
+
+
+use SilverStripe\ORM\DB;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Core\Convert;
+use SilverStripe\ORM\Queries\SQLSelect;
+use SilverStripe\ORM\Queries\SQLUpdate;
+use SilverStripe\ORM\Queries\SQLInsert;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Security\Member;
+use SilverStripe\Security\Security;
+use SilverStripe\Control\Session;
+use SilverStripe\Dev\Deprecation;
+use SilverStripe\ORM\Queries\SQLDelete;
+use SilverStripe\Versioned\Versioned;
+
+
+
 /**
  * All migrations that must be executed must be descended from this class and define both an ->up() and a ->down()
  * method. Migrations will be executed in alphanumeric order
@@ -387,7 +420,7 @@ abstract class Migration implements MigrationInterface {
      * @throws    MigrationException
      */
     public static function setPageType(SiteTree $page, $pageType) {
-        if (!is_a($pageType, "SiteTree", true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+        if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
         $page = $page->newClassInstance($pageType);
         static::publish($page);
     }
@@ -502,11 +535,11 @@ abstract class Migration implements MigrationInterface {
         // Quick validation.
         foreach(array($fromObject, $toObject) as $validateObject) {
             if (!class_exists($validateObject)) throw new MigrationException("'$validateObject' doesn't appear to be an object.");
-            if (is_a($validateObject, 'DataObject')) throw new MigrationException("'$validateObject' must be an instance of DataObject.");
+            if (is_a($validateObject, DataObject::class)) throw new MigrationException("'$validateObject' must be an instance of DataObject.");
 
             /** @var $validateInstance DataObject */
             $validateInstance = singleton($validateObject);
-            if (!$validateInstance->hasExtension('Versioned')) throw new MigrationException("'$validateObject' must be a versioned object (i.e. have the Versioned extension).");
+            if (!$validateInstance->hasExtension(Versioned::class)) throw new MigrationException("'$validateObject' must be a versioned object (i.e. have the Versioned extension).");
         }
 
         // Repeat on each instance of the objects' tables.

@@ -1,5 +1,23 @@
 <?php
 
+namespace Silverstripe\Migrations\Tests;
+
+
+
+
+
+
+use Exception;
+
+use Silverstripe\Migrations\MigrateTask;
+use Silverstripe\Migrations\Migration;
+use SilverStripe\Dev\SapphireTest;
+use SilverStripe\Dev\TestOnly;
+use Silverstripe\Migrations\MigrationInterface;
+use SilverStripe\ORM\DataObject;
+
+
+
 class MigrateTaskTest extends SapphireTest {
 
 	protected static $fixture_file = 'MigrateTaskTest.yml';
