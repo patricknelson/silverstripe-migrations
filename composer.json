@@ -13,9 +13,14 @@
     "support": {
         "issues": "https://github.com/patricknelson/silverstripe-migrations/issues"
     },
+    "autoload": {
+        "psr-4": {
+            "SilverStripe\\Migrations\\": "code/",
+            "SilverStripe\\Migrations\\Tests\\": "tests/"
+        }
+    },
     "require": {
-        "silverstripe/cms": "^3.0.0",
-        "silverstripe/framework": "^3.0.0"
+        "silverstripe/cms": "^4.9.0"
     },
     "extra": {
         "installer-name": "migrations"
