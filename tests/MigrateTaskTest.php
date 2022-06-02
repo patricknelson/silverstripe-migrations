@@ -20,9 +20,9 @@ use SilverStripe\ORM\DataObject;
 
 class MigrateTaskTest extends SapphireTest {
 
-	protected static $fixture_file = 'MigrateTaskTest.yml';
+    protected static $fixture_file = 'MigrateTaskTest.yml';
 
-    protected $extra_dataobjects = [
+    protected static $extra_dataobjects = [
         Migration_TestParent::class,
         Migration_TestChild::class,
         Migration_TestGrandchild::class,

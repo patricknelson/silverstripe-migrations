@@ -20,7 +20,7 @@ class DatabaseMigrations extends DataObject {
         "BaseName"          => "Varchar(255)",
         "MigrationClass"    => "Varchar(255)",
         "Batch"             => "Int",
-        "Stamp"             => "SS_DateTime",
+        "Stamp"             => "DBDatetime",
     );
 
 }

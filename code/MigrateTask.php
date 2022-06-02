@@ -13,8 +13,8 @@ use SilverStripe\ORM\DB;
 use PattricNelson\SilverStripeMigrations\MigrationBoilerplate;
 use SilverStripe\Core\Manifest\ClassLoader;
 use PattricNelson\SilverStripeMigrations\Migration;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Dev\BuildTask;
-
 
 
 /**
@@ -63,7 +63,7 @@ class MigrateTask extends BuildTask {
     protected $lastMigrationFile = '';
 
     /**
-     * @param    SS_HTTPRequest $request
+     * @param     HTTPRequest $request
      * @throws    MigrationException
      */
     public function run($request) {
