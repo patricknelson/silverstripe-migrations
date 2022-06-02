@@ -1,6 +1,6 @@
 <?php
 
-namespace Silverstripe\Migrations;
+namespace SilverStripe\Migrations;
 
 
 
@@ -10,9 +10,9 @@ use Exception;
 use ReflectionClass;
 use SilverStripe\Control\Director;
 use SilverStripe\ORM\DB;
-use Silverstripe\Migrations\MigrationBoilerplate;
+use SilverStripe\Migrations\MigrationBoilerplate;
 use SilverStripe\Core\Manifest\ClassLoader;
-use Silverstripe\Migrations\Migration;
+use SilverStripe\Migrations\Migration;
 use SilverStripe\Dev\BuildTask;
 
 

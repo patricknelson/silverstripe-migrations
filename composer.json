@@ -22,7 +22,16 @@
     "require": {
         "silverstripe/cms": "^4.9.0"
     },
+    "require-dev": {
+        "sminnee/phpunit": "^5.7.29"
+    },
     "extra": {
         "installer-name": "migrations"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "silverstripe/vendor-plugin": true
+        }
     }
 }

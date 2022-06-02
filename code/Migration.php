@@ -1,6 +1,6 @@
 <?php
 
-namespace Silverstripe\Migrations;
+namespace SilverStripe\Migrations;
 
 
 
@@ -125,7 +125,7 @@ abstract class Migration implements MigrationInterface {
         // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
         $ancestors = ClassInfo::ancestry($className, true);
         foreach($ancestors as $ancestor) {
-            if (DataObject::has_own_table($ancestor)) {
+            if (DataObject::getSchema()->classHasTable($ancestor)) {
                 if (DB::get_schema()->hasField($ancestor, $field)) return $ancestor;
             }
         }
@@ -300,8 +300,8 @@ abstract class Migration implements MigrationInterface {
     public static function publish(SiteTree $page, $force = true) {
         try {
             static::whileAdmin(function () use ($page, $force) {
-                if (!$page->getIsModifiedOnStage() || $force) {
-                    $page->doPublish();
+                if (!$page->isModifiedOnDraft() || $force) {
+                    $page->publishRecursive();
                 } else {
                     $page->write();
                 }

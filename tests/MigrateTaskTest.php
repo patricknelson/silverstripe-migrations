@@ -1,6 +1,6 @@
 <?php
 
-namespace Silverstripe\Migrations\Tests;
+namespace SilverStripe\Migrations\Tests;
 
 
 
@@ -9,11 +9,11 @@ namespace Silverstripe\Migrations\Tests;
 
 use Exception;
 
-use Silverstripe\Migrations\MigrateTask;
-use Silverstripe\Migrations\Migration;
+use SilverStripe\Migrations\MigrateTask;
+use SilverStripe\Migrations\Migration;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
-use Silverstripe\Migrations\MigrationInterface;
+use SilverStripe\Migrations\MigrationInterface;
 use SilverStripe\ORM\DataObject;
 
 

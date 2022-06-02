@@ -1,6 +1,6 @@
 <?php
 
-namespace Silverstripe\Migrations;
+namespace SilverStripe\Migrations;
 
 
 
