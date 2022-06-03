@@ -2,19 +2,7 @@
 
 namespace PattricNelson\SilverStripeMigrations;
 
-
-
-
-
-
-
-
-
 use Exception;
-
-
-
-
 
 use SilverStripe\ORM\DB;
 use SilverStripe\Core\ClassInfo;
@@ -30,8 +18,6 @@ use SilverStripe\Control\Session;
 use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\Queries\SQLDelete;
 use SilverStripe\Versioned\Versioned;
-
-
 
 /**
  * All migrations that must be executed must be descended from this class and define both an ->up() and a ->down()
@@ -59,7 +45,6 @@ abstract class Migration implements MigrationInterface {
     public function isObsolete() {
         return $this->obsolete;
     }
-
 
     #######################################
     ## DATABASE MIGRATION HELPER METHODS ##

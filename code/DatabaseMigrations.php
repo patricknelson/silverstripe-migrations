@@ -2,10 +2,7 @@
 
 namespace PattricNelson\SilverStripeMigrations;
 
-
 use SilverStripe\ORM\DataObject;
-
-
 
 /**
  * DataObject used to keep track of previously run migrations.

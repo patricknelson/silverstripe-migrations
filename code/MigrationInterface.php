@@ -2,9 +2,6 @@
 
 namespace PattricNelson\SilverStripeMigrations;
 
-
-
-
 /**
  * Needed for consistency between unit tests and actual migrations.
  *

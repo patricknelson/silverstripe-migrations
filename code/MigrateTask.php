@@ -2,9 +2,6 @@
 
 namespace PattricNelson\SilverStripeMigrations;
 
-
-
-
 use Exception;
 
 use ReflectionClass;
@@ -15,7 +12,6 @@ use SilverStripe\Core\Manifest\ClassLoader;
 use PattricNelson\SilverStripeMigrations\Migration;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Dev\BuildTask;
-
 
 /**
  * Task which allows you to do the following:
@@ -160,7 +156,6 @@ class MigrateTask extends BuildTask {
         return Director::is_cli();
     }
 
-
     ########################
     ## MAIN FUNCTIONALITY ##
     ########################
@@ -276,7 +271,6 @@ class MigrateTask extends BuildTask {
         // Output status and exit.
         $this->output("Created new migration: $filePath");
     }
-
 
     ####################
     ## HELPER METHODS ##
