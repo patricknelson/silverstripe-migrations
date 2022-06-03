@@ -117,7 +117,7 @@ class Migration_TestParent extends DataObject implements TestOnly {
     private static $db = [
         'ParentField' => 'Varchar(255)',
     ];
-
+    private static $table_name = 'Migration_TestParent';
 }
 
 class Migration_TestChild extends Migration_TestParent implements TestOnly {
@@ -125,7 +125,7 @@ class Migration_TestChild extends Migration_TestParent implements TestOnly {
     private static $db = [
         'ChildField' => 'Varchar(255)',
     ];
-
+    private static $table_name = 'Migration_TestChild';
 }
 
 class Migration_TestGrandchild extends Migration_TestChild implements TestOnly {
@@ -133,5 +133,5 @@ class Migration_TestGrandchild extends Migration_TestChild implements TestOnly {
     private static $db = [
         'Grandchild' => 'Varchar(255)',
     ];
-
+    private static $table_name = 'Migration_TestGrandchild';
 }

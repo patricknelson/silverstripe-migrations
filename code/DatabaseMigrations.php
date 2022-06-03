@@ -22,5 +22,5 @@ class DatabaseMigrations extends DataObject {
         "Batch"             => "Int",
         "Stamp"             => "DBDatetime",
     );
-
+    private static $table_name = 'DatabaseMigrations';
 }
