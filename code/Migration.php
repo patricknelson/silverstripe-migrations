@@ -110,8 +110,8 @@ abstract class Migration implements MigrationInterface {
         // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
         $ancestors = ClassInfo::ancestry($className, true);
         foreach($ancestors as $ancestor) {
-            if ($tableName = DataObject::getSchema()->tableName($ancestor)) {
-                if (DB::get_schema()->hasField($tableName, $field)) return $ancestor;
+            if ($tableName = DataObject::getSchema()->tableForField($ancestor, $field)) {
+                return $ancestor;
             }
         }
 
