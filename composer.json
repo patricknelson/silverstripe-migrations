@@ -14,10 +14,8 @@
         "issues": "https://github.com/patricknelson/silverstripe-migrations/issues"
     },
     "autoload": {
-        "psr-4": {
-            "PattricNelson\\SilverStripeMigrations\\": "code/",
-            "PattricNelson\\SilverStripeMigrations\\Tests\\": "tests/"
-        }
+        "psr-4": { "PattricNelson\\SilverStripeMigrations\\": "code/" },
+        "classmap": { "PattricNelson\\SilverStripeMigrations\\Tests\\": "tests/" }
     },
     "require": {
         "silverstripe/cms": "^4.9.0"
