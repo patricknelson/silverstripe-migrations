@@ -1,10 +1,21 @@
 <?php
 
+namespace PattricNelson\SilverStripeMigrations\Tests;
+
+use Exception;
+
+use PattricNelson\SilverStripeMigrations\MigrateTask;
+use PattricNelson\SilverStripeMigrations\Migration;
+use PattricNelson\SilverStripeMigrations\MigrationInterface;
+use SilverStripe\Dev\SapphireTest;
+use SilverStripe\Dev\TestOnly;
+use SilverStripe\ORM\DataObject;
+
 class MigrateTaskTest extends SapphireTest {
 
-	protected static $fixture_file = 'MigrateTaskTest.yml';
+    protected static $fixture_file = 'MigrateTaskTest.yml';
 
-    protected $extraDataObjects = [
+    protected static $extra_dataobjects = [
         Migration_TestParent::class,
         Migration_TestChild::class,
         Migration_TestGrandchild::class,
@@ -99,7 +110,7 @@ class Migration_TestParent extends DataObject implements TestOnly {
     private static $db = [
         'ParentField' => 'Varchar(255)',
     ];
-
+    private static $table_name = 'Migration_TestParent';
 }
 
 class Migration_TestChild extends Migration_TestParent implements TestOnly {
@@ -107,7 +118,7 @@ class Migration_TestChild extends Migration_TestParent implements TestOnly {
     private static $db = [
         'ChildField' => 'Varchar(255)',
     ];
-
+    private static $table_name = 'Migration_TestChild';
 }
 
 class Migration_TestGrandchild extends Migration_TestChild implements TestOnly {
@@ -115,5 +126,5 @@ class Migration_TestGrandchild extends Migration_TestChild implements TestOnly {
     private static $db = [
         'Grandchild' => 'Varchar(255)',
     ];
-
+    private static $table_name = 'Migration_TestGrandchild';
 }

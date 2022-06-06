@@ -1,4 +1,9 @@
 <?php
+
+namespace PattricNelson\SilverStripeMigrations;
+
+use Exception;
+
 /**
  * Setup only to better differentiate between exceptions coming directly from migration validation and any other
  * exceptions.

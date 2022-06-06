@@ -1,7 +1,7 @@
 {
     "name": "patricknelson/silverstripe-migrations",
     "description": "SilverStripe Database Migration module. Facilitates atomic database migrations in SilverStripe 3.x",
-    "type": "silverstripe-module",
+    "type": "silverstripe-vendormodule",
     "homepage": "https://github.com/patricknelson/silverstripe-migrations",
     "keywords": [
         "silverstripe","database migrations","migrate"
@@ -13,11 +13,14 @@
     "support": {
         "issues": "https://github.com/patricknelson/silverstripe-migrations/issues"
     },
-    "require": {
-        "silverstripe/cms": "^3.0.0",
-        "silverstripe/framework": "^3.0.0"
+    "autoload": {
+        "psr-4": { "PattricNelson\\SilverStripeMigrations\\": "code/" },
+        "classmap": { "PattricNelson\\SilverStripeMigrations\\Tests\\": "tests/" }
     },
-    "extra": {
-        "installer-name": "migrations"
+    "require": {
+        "silverstripe/cms": "^4.9.0"
+    },
+    "require-dev": {
+        "sminnee/phpunit": "^5.7.29"
     }
 }

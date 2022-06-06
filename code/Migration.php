@@ -1,5 +1,24 @@
 <?php
 
+namespace PattricNelson\SilverStripeMigrations;
+
+use Exception;
+
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Control\Session;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\Core\Convert;
+use SilverStripe\Dev\Deprecation;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
+use SilverStripe\ORM\Queries\SQLDelete;
+use SilverStripe\ORM\Queries\SQLInsert;
+use SilverStripe\ORM\Queries\SQLSelect;
+use SilverStripe\ORM\Queries\SQLUpdate;
+use SilverStripe\Security\Member;
+use SilverStripe\Security\Security;
+use SilverStripe\Versioned\Versioned;
+
 /**
  * All migrations that must be executed must be descended from this class and define both an ->up() and a ->down()
  * method. Migrations will be executed in alphanumeric order
@@ -26,7 +45,6 @@ abstract class Migration implements MigrationInterface {
     public function isObsolete() {
         return $this->obsolete;
     }
-
 
     #######################################
     ## DATABASE MIGRATION HELPER METHODS ##
@@ -92,8 +110,8 @@ abstract class Migration implements MigrationInterface {
         // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
         $ancestors = ClassInfo::ancestry($className, true);
         foreach($ancestors as $ancestor) {
-            if (DataObject::has_own_table($ancestor)) {
-                if (DB::get_schema()->hasField($ancestor, $field)) return $ancestor;
+            if ($tableName = DataObject::getSchema()->tableForField($ancestor, $field)) {
+                return $ancestor;
             }
         }
 
@@ -267,8 +285,8 @@ abstract class Migration implements MigrationInterface {
     public static function publish(SiteTree $page, $force = true) {
         try {
             static::whileAdmin(function () use ($page, $force) {
-                if (!$page->getIsModifiedOnStage() || $force) {
-                    $page->doPublish();
+                if (!$page->isModifiedOnDraft() || $force) {
+                    $page->publishRecursive();
                 } else {
                     $page->write();
                 }
@@ -387,7 +405,7 @@ abstract class Migration implements MigrationInterface {
      * @throws    MigrationException
      */
     public static function setPageType(SiteTree $page, $pageType) {
-        if (!is_a($pageType, "SiteTree", true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+        if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
         $page = $page->newClassInstance($pageType);
         static::publish($page);
     }
@@ -502,11 +520,11 @@ abstract class Migration implements MigrationInterface {
         // Quick validation.
         foreach(array($fromObject, $toObject) as $validateObject) {
             if (!class_exists($validateObject)) throw new MigrationException("'$validateObject' doesn't appear to be an object.");
-            if (is_a($validateObject, 'DataObject')) throw new MigrationException("'$validateObject' must be an instance of DataObject.");
+            if (is_a($validateObject, DataObject::class)) throw new MigrationException("'$validateObject' must be an instance of DataObject.");
 
             /** @var $validateInstance DataObject */
             $validateInstance = singleton($validateObject);
-            if (!$validateInstance->hasExtension('Versioned')) throw new MigrationException("'$validateObject' must be a versioned object (i.e. have the Versioned extension).");
+            if (!$validateInstance->hasExtension(Versioned::class)) throw new MigrationException("'$validateObject' must be a versioned object (i.e. have the Versioned extension).");
         }
 
         // Repeat on each instance of the objects' tables.

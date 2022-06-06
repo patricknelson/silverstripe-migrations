@@ -34,7 +34,7 @@ Using this task, you can do the following:
 	- `sake dev/tasks/MigrateTask down`
 3. Make a new migration file for you with boilerplate code.
 	- `sake dev/tasks/MigrateTask make:migration_name`
-	- **Note:** This file will be automatically placed in your project directory in the path `<project>/code/migrations`. You can customize this location by defining a `MIGRATIONS_PATH` constant which should be the absolute path to the desired directory (either in your `_ss_environment.php` or `_config.php` files). Also, migration files that are automatically generated will be pseudo-namespaced with a `Migration_` prefix to help reduce possible class name collisions.
+	- **Note:** This file will be automatically placed in your project directory in the path `<project>/src/migrations`. You can customize this location by defining a `MIGRATIONS_PATH` constant which should be the absolute path to the desired directory (either in your `_ss_environment.php` or `_config.php` files). Also, migration files that are automatically generated will be pseudo-namespaced with a `Migration_` prefix to help reduce possible class name collisions.
 
 ### How it Works
 

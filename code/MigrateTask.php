@@ -1,5 +1,18 @@
 <?php
 
+namespace PattricNelson\SilverStripeMigrations;
+
+use Exception;
+
+use PattricNelson\SilverStripeMigrations\Migration;
+use PattricNelson\SilverStripeMigrations\MigrationBoilerplate;
+use ReflectionClass;
+use SilverStripe\Control\Director;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Manifest\ClassLoader;
+use SilverStripe\Dev\BuildTask;
+use SilverStripe\ORM\DB;
+
 /**
  * Task which allows you to do the following:
  *
@@ -19,7 +32,7 @@
  *
  *        YYYY_MM_DD_HHMMSS_change_serialize_to_json.php
  *
- * IMPORTANT: This file will be automatically placed in your project directory in the path "<project>/code/migrations".
+ * IMPORTANT: This file will be automatically placed in your project directory in the path "<project>/src/migrations".
  * This can be overridden by defining an absolute path in the constant "MIGRATION_PATH" in your _ss_environment.php file.
  * Migration files that are automatically generated will be pseudo-namespaced with a "Migration_" prefix to help reduce
  * possible class name collisions.
@@ -45,8 +58,10 @@ class MigrateTask extends BuildTask {
     // Used for error reporting purposes.
     protected $lastMigrationFile = '';
 
+    private static $segment = 'MigrateTask';
+
     /**
-     * @param    SS_HTTPRequest $request
+     * @param     HTTPRequest $request
      * @throws    MigrationException
      */
     public function run($request) {
@@ -81,7 +96,7 @@ class MigrateTask extends BuildTask {
         register_shutdown_function(array($this, "shutdown"));
 
         // Determine action to take. Wrap everything in a transaction so it can be rolled back in case of error.
-        DB::getConn()->transactionStart();
+        DB::get_conn()->transactionStart();
         try {
             if (isset($args["up"])) {
                 $this->up();
@@ -97,7 +112,7 @@ class MigrateTask extends BuildTask {
             }
 
             // Commit and clean up error state..
-            DB::getConn()->transactionEnd();
+            DB::get_conn()->transactionEnd();
             $this->error = false;
 
         } catch (Exception $e) {
@@ -125,7 +140,7 @@ class MigrateTask extends BuildTask {
         if ($this->error && !$e) $e = new MigrationException("The migration" . ($this->lastMigrationFile ? " '$this->lastMigrationFile.php'" : "") . " terminated unexpectedly.");
         if ($e) {
             // Rollback database changes and notify user.
-            DB::getConn()->transactionRollback();
+            DB::get_conn()->transactionRollback();
             $this->output("ERROR" . ($e->getCode() != 0 ? " (" . $e->getCode() . ")" : "") . ": " . $e->getMessage());
             $this->output("\nNote: Any database changes have been rolled back.");
             $this->output("\nStack Trace:");
@@ -142,7 +157,6 @@ class MigrateTask extends BuildTask {
     public function isEnabled() {
         return Director::is_cli();
     }
-
 
     ########################
     ## MAIN FUNCTIONALITY ##
@@ -251,15 +265,17 @@ class MigrateTask extends BuildTask {
         }
 
         // Get boilerplate file contents, find/replace some contents and write to file path.
-        $sourceFile = __DIR__ . DIRECTORY_SEPARATOR . "MigrationBoilerplate.php";
-        $sourceData = file_get_contents($sourceFile);
-        $sourceData = str_replace("MigrationBoilerplate", $camelCase, $sourceData);
+        $reflect = new ReflectionClass(MigrationBoilerplate::class);
+        $sourceData = str_replace(
+            [$reflect->getShortName(), 'namespace '.$reflect->getNamespaceName()],
+            [$camelCase, 'use '.Migration::class],
+            file_get_contents($reflect->getFileName())
+        );
         file_put_contents($filePath, $sourceData);
 
         // Output status and exit.
         $this->output("Created new migration: $filePath");
     }
-
 
     ####################
     ## HELPER METHODS ##
@@ -301,7 +317,7 @@ class MigrateTask extends BuildTask {
             if (empty($project)) throw new MigrationException("Please either define a global '\$project' variable or define a MIGRATION_PATH constant in order to setup a path for migration files to live.");
 
             // Build path.
-            $migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, "code", "migrations"));
+            $migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, "src", "migrations"));
         }
 
         return $migrationPath;
@@ -314,8 +330,8 @@ class MigrateTask extends BuildTask {
      */
     public static function getAllMigrations() {
         // Get all descendants of the abstract "Migration" class but ensure the class "MigrationBoilerplate" is skipped.
-        $manifest = SS_ClassLoader::instance()->getManifest();
-        $classes = array_diff($manifest->getDescendantsOf("Migration"), array("MigrationBoilerplate"));
+        $manifest = ClassLoader::inst()->getManifest();
+        $classes = array_diff($manifest->getDescendantsOf(Migration::class), array(MigrationBoilerplate::class));
         $classesOrdered = array();
         foreach ($classes as $className) {
             // Get actual filename of migration class and use that as the key.

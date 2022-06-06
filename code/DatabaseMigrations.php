@@ -1,5 +1,9 @@
 <?php
 
+namespace PattricNelson\SilverStripeMigrations;
+
+use SilverStripe\ORM\DataObject;
+
 /**
  * DataObject used to keep track of previously run migrations.
  *
@@ -13,7 +17,7 @@ class DatabaseMigrations extends DataObject {
         "BaseName"          => "Varchar(255)",
         "MigrationClass"    => "Varchar(255)",
         "Batch"             => "Int",
-        "Stamp"             => "SS_DateTime",
+        "Stamp"             => "DBDatetime",
     );
-
+    private static $table_name = 'DatabaseMigrations';
 }
