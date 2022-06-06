@@ -4,14 +4,14 @@ namespace PattricNelson\SilverStripeMigrations;
 
 use Exception;
 
+use PattricNelson\SilverStripeMigrations\Migration;
+use PattricNelson\SilverStripeMigrations\MigrationBoilerplate;
 use ReflectionClass;
 use SilverStripe\Control\Director;
-use SilverStripe\ORM\DB;
-use PattricNelson\SilverStripeMigrations\MigrationBoilerplate;
-use SilverStripe\Core\Manifest\ClassLoader;
-use PattricNelson\SilverStripeMigrations\Migration;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Manifest\ClassLoader;
 use SilverStripe\Dev\BuildTask;
+use SilverStripe\ORM\DB;
 
 /**
  * Task which allows you to do the following:

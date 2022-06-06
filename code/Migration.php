@@ -4,19 +4,19 @@ namespace PattricNelson\SilverStripeMigrations;
 
 use Exception;
 
-use SilverStripe\ORM\DB;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Control\Session;
 use SilverStripe\Core\ClassInfo;
-use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Convert;
+use SilverStripe\Dev\Deprecation;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
+use SilverStripe\ORM\Queries\SQLDelete;
+use SilverStripe\ORM\Queries\SQLInsert;
 use SilverStripe\ORM\Queries\SQLSelect;
 use SilverStripe\ORM\Queries\SQLUpdate;
-use SilverStripe\ORM\Queries\SQLInsert;
-use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
-use SilverStripe\Control\Session;
-use SilverStripe\Dev\Deprecation;
-use SilverStripe\ORM\Queries\SQLDelete;
 use SilverStripe\Versioned\Versioned;
 
 /**

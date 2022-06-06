@@ -6,9 +6,9 @@ use Exception;
 
 use PattricNelson\SilverStripeMigrations\MigrateTask;
 use PattricNelson\SilverStripeMigrations\Migration;
+use PattricNelson\SilverStripeMigrations\MigrationInterface;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
-use PattricNelson\SilverStripeMigrations\MigrationInterface;
 use SilverStripe\ORM\DataObject;
 
 class MigrateTaskTest extends SapphireTest {
