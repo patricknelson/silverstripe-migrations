@@ -26,7 +26,7 @@ class MigrateTaskTest extends SapphireTest {
 	 */
 	protected $task;
 
-	public function setUp() {
+	public function setUp() { // TODO: SSv4: PHPUnit 9 requires a void return type.
 		parent::setUp();
 
 		// Initialize task instance, ensure it's quiet.
@@ -37,7 +37,7 @@ class MigrateTaskTest extends SapphireTest {
 	public function testEnsureWorking() {
 		// Just a generic test to make sure unit testing is working.
 		$task = new MigrateTask();
-		$this->assertContains("migrations", $task->getMigrationPath());
+		$this->assertContains("migrations", $task->getMigrationPath()); // TODO: SSv4: PHPUnit 9 requires assertStringContainsString() for strings.
 	}
 
 	public function testLatestBatch() {
@@ -71,6 +71,9 @@ class MigrateTaskTest extends SapphireTest {
 		// TODO: Make sure values are properly transformed from old -> new
 	}
 
+	/**
+	 * TODO: SSv4: Expect mapped table names instead of namespaced class names.
+	 */
 	public function testGetTableForField() {
 	    $this->assertEquals(Migration_TestParent::class,     Migration::getTableForField(Migration_TestGrandchild::class, 'ParentField'));
 	    $this->assertEquals(Migration_TestChild::class,      Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));

@@ -3,18 +3,17 @@
 namespace PatrickNelson\SilverStripeMigrations;
 
 use Exception;
-
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Session;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Core\Convert;
-use SilverStripe\Dev\Deprecation;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\Queries\SQLDelete;
 use SilverStripe\ORM\Queries\SQLInsert;
 use SilverStripe\ORM\Queries\SQLSelect;
 use SilverStripe\ORM\Queries\SQLUpdate;
+use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
@@ -57,7 +56,7 @@ abstract class Migration implements MigrationInterface {
      * @return  bool
      */
     public static function tableExists($table) {
-        $tables = DB::tableList();
+        $tables = DB::tableList(); // TODO: SSv4: Missing method
         return array_key_exists(strtolower($table), $tables);
     }
 
@@ -94,7 +93,7 @@ abstract class Migration implements MigrationInterface {
      */
     public static function getTableColumns($table) {
         if (!self::tableExists($table)) return array();
-        return DB::fieldList($table);
+        return DB::fieldList($table); // TODO: SSv4: Missing method
     }
 
     /**
@@ -110,8 +109,8 @@ abstract class Migration implements MigrationInterface {
         // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
         $ancestors = ClassInfo::ancestry($className, true);
         foreach($ancestors as $ancestor) {
-            if ($tableName = DataObject::getSchema()->tableForField($ancestor, $field)) {
-                return $ancestor;
+            if (DataObject::getSchema()->tableForField($ancestor, $field)) {
+                return $ancestor; // TODO: SSv4: Return the mapped table name, not the namespaced class name.
             }
         }
 
@@ -314,7 +313,7 @@ abstract class Migration implements MigrationInterface {
     }
 
     /**
-     * The intent with this function is to allow it to maintain it's own state while allowing you to execute your own
+     * The intent with this function is to allow it to maintain its own state while allowing you to execute your own
      * arbitrary code within that state (i.e. while logged in as an administrator).
      *
      * Ensures we have permissions to manipulate pages (gets around access issues with global state). Unfortunately, the
@@ -323,6 +322,8 @@ abstract class Migration implements MigrationInterface {
      *
      * @param    callable $closure      The closure (or class/method array) that you'd like to execute while logged in
      *                                  as an admin.
+     *
+     * TODO: SSv4: Modernize, will not work yet as is.
      *
      * @throws    MigrationException|Exception
      */
@@ -364,39 +365,6 @@ abstract class Migration implements MigrationInterface {
     }
 
     /**
-     * Ensures we have permissions to manipulate pages (gets around access issues with global state). Unfortunately, the
-     * creation of a default admin account below is necessary because SilverStripe will reference global state via
-     * Member::currentUser() and the only surefire way around this is to login as a default admin with full access.
-     *
-     * CAUTION: Since migrations can only be run from the command line, it's assumed that if you're accessing this, then
-     * you're already an admin or you've got an incorrectly configured site!
-     *
-     * TODO: This should be removed soon.
-     *
-     * @throws      MigrationException
-     * @deprecated  Use ::whileAdmin() instead.
-     */
-    protected static function loginAsAdmin() {
-        Deprecation::notice('0', 'Use ::whileAdmin() instead. This method will be removed soon.');
-
-        if (!Member::currentUserID()) {
-            // See if a default admin is setup yet.
-            if (!Security::has_default_admin()) {
-                // Generate a randomized user/pass and use that as the default administrator just for this session.
-                $user = substr(str_shuffle(sha1("u" . microtime())), 0, 20);
-                $pass = substr(str_shuffle(sha1("p" . microtime())), 0, 20);
-                Security::setDefaultAdmin($user, $pass);
-            }
-
-            $admin = Member::default_admin();
-            if (!$admin) throw new MigrationException("Cannot login: No default administrator found.");
-
-            Session::start();
-            Session::set("loggedInAs", $admin->ID);
-        }
-    }
-
-    /**
      * Shorthand to make it easier to update the page type, since SilverStripe has a very specific method for
      * accomplishing this.
      *
@@ -406,6 +374,7 @@ abstract class Migration implements MigrationInterface {
      */
     public static function setPageType(SiteTree $page, $pageType) {
         if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+        /** @var SiteTree $page */
         $page = $page->newClassInstance($pageType);
         static::publish($page);
     }
@@ -427,7 +396,7 @@ abstract class Migration implements MigrationInterface {
      */
     public static function transitionField(DataObject $dataObject, $oldFieldName, $newFieldName, callable $transformation = null) {
         // Get and transform data (if applicable).
-        $value = static::getRowValueFromTable(get_class($dataObject), $oldFieldName, $dataObject->ID);
+        $value = static::getRowValueFromTable(get_class($dataObject), $oldFieldName, $dataObject->ID); // TODO: SSv4: Resolve the table name separately from the class name.
         if ($transformation) $value = call_user_func($transformation, $value);
 
         // Set transformed value and save (varies depending on if this is a page or not).
@@ -509,6 +478,8 @@ abstract class Migration implements MigrationInterface {
      *
      * NOTE: Please see ::copyTable() for more details on the parameters below.
      *
+     * TODO: SSv4: Use mapped table names and handle versioned-only objects without a Live table.
+     *
      * @param   string      $fromObject     The name of SOURCE versioned object to copy field data from.
      * @param   string      $toObject       The name of DESTINATION versioned object to copy field data to.
      * @param   array|null  $fieldMapping
@@ -528,7 +499,7 @@ abstract class Migration implements MigrationInterface {
         }
 
         // Repeat on each instance of the objects' tables.
-        $suffixes = array('', '_Live', '_versions');
+        $suffixes = array('', '_Live', '_Versions');
         foreach($suffixes as $suffix) {
             self::copyTable($fromObject . $suffix, $toObject . $suffix, $fieldMapping, $purgeDest, $where);
         }

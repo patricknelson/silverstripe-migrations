@@ -3,9 +3,6 @@
 namespace PatrickNelson\SilverStripeMigrations;
 
 use Exception;
-
-use PatrickNelson\SilverStripeMigrations\Migration;
-use PatrickNelson\SilverStripeMigrations\MigrationBoilerplate;
 use ReflectionClass;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
@@ -87,6 +84,7 @@ class MigrateTask extends BuildTask {
 
         // Unfortunately, SilverStripe is not using exceptions for database errors for some reason, so we must
         // temporarily setup our own global error handler as a stop gap so we can properly handle transactions.
+        // TODO: SSv4: Database errors already throw exceptions; this handler also throws on deprecations.
         set_error_handler(function ($errno, $errstr) {
             throw new MigrationException($errstr, $errno);
         });
@@ -115,7 +113,7 @@ class MigrateTask extends BuildTask {
             DB::get_conn()->transactionEnd();
             $this->error = false;
 
-        } catch (Exception $e) {
+        } catch (Exception $e) { // TODO: SSv4: Catch Throwable so PHP 7/8 errors retain their details.
             $this->shutdown($e);
         }
 
@@ -125,6 +123,8 @@ class MigrateTask extends BuildTask {
     /**
      * Will always execute after any/all migrations have run. The purpose of this is to clean up and to handle any
      * unexpected errors which may occur.
+     *
+     * TODO: SSv4: Accept Throwable so PHP 7/8 errors can be reported.
      *
      * @param   Exception|null $e
      */
@@ -267,8 +267,8 @@ class MigrateTask extends BuildTask {
         // Get boilerplate file contents, find/replace some contents and write to file path.
         $reflect = new ReflectionClass(MigrationBoilerplate::class);
         $sourceData = str_replace(
-            [$reflect->getShortName(), 'namespace '.$reflect->getNamespaceName()],
-            [$camelCase, 'use '.Migration::class],
+            [$reflect->getShortName(), 'namespace ' . $reflect->getNamespaceName()],
+            [$camelCase, 'use ' . Migration::class],
             file_get_contents($reflect->getFileName())
         );
         file_put_contents($filePath, $sourceData);
@@ -316,7 +316,7 @@ class MigrateTask extends BuildTask {
             $project = project();
             if (empty($project)) throw new MigrationException("Please either define a global '\$project' variable or define a MIGRATION_PATH constant in order to setup a path for migration files to live.");
 
-            // Build path.
+            // Build path. TODO: SSv4: Double check that project() above and the "src" here are the best approach. Check for alternatives.
             $migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, "src", "migrations"));
         }
 
