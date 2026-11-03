@@ -1,12 +1,11 @@
 <?php
 
-namespace PatrickNelson\SilverStripeMigrations\Tests;
+namespace PatrickNelson\Migrations\Tests;
 
 use Exception;
-
-use PatrickNelson\SilverStripeMigrations\MigrateTask;
-use PatrickNelson\SilverStripeMigrations\Migration;
-use PatrickNelson\SilverStripeMigrations\MigrationInterface;
+use PatrickNelson\Migrations\MigrateTask;
+use PatrickNelson\Migrations\Migration;
+use PatrickNelson\Migrations\MigrationInterface;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;

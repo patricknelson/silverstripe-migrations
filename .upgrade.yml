@@ -1,2 +1,7 @@
 mappings:
-  # TODO: SSv4: Add upgrade mappings once NS has been fixed...
+  DatabaseMigrations: PatrickNelson\Migrations\DatabaseMigrations
+  MigrateTask: PatrickNelson\Migrations\MigrateTask
+  Migration: PatrickNelson\Migrations\Migration
+  MigrationBoilerplate: PatrickNelson\Migrations\MigrationBoilerplate
+  MigrationException: PatrickNelson\Migrations\MigrationException
+  MigrationInterface: PatrickNelson\Migrations\MigrationInterface

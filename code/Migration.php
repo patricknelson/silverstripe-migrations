@@ -1,6 +1,6 @@
 <?php
 
-namespace PatrickNelson\SilverStripeMigrations;
+namespace PatrickNelson\Migrations;
 
 use Exception;
 use SilverStripe\CMS\Model\SiteTree;

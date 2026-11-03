@@ -1,6 +1,6 @@
 <?php
 
-namespace PatrickNelson\SilverStripeMigrations;
+namespace PatrickNelson\Migrations;
 
 class MigrationBoilerplate extends Migration {
 
