@@ -25,7 +25,7 @@ class MigrateTaskTest extends SapphireTest {
 	 */
 	protected $task;
 
-	public function setUp() { // TODO: SSv4: PHPUnit 9 requires a void return type.
+	public function setUp(): void {
 		parent::setUp();
 
 		// Initialize task instance, ensure it's quiet.
@@ -36,7 +36,7 @@ class MigrateTaskTest extends SapphireTest {
 	public function testEnsureWorking() {
 		// Just a generic test to make sure unit testing is working.
 		$task = new MigrateTask();
-		$this->assertContains("migrations", $task->getMigrationPath()); // TODO: SSv4: PHPUnit 9 requires assertStringContainsString() for strings.
+		$this->assertStringContainsString("migrations", $task->getMigrationPath());
 	}
 
 	public function testLatestBatch() {

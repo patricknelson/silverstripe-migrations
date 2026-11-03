@@ -11,5 +11,4 @@ use Exception;
  * @author	Patrick Nelson, pat@catchyour.com
  * @since	2015-08-21
  */
-
 class MigrationException extends Exception {}

@@ -2,13 +2,13 @@
 
 namespace PatrickNelson\Migrations;
 
-use Exception;
 use ReflectionClass;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Manifest\ClassLoader;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
+use Throwable;
 
 /**
  * Task which allows you to do the following:
@@ -37,7 +37,6 @@ use SilverStripe\ORM\DB;
  * @author   Patrick Nelson, pat@catchyour.com
  * @since    2015-02-17
  */
-
 class MigrateTask extends BuildTask {
 
     protected $title = 'Database Migrations (Module)';
@@ -113,7 +112,7 @@ class MigrateTask extends BuildTask {
             DB::get_conn()->transactionEnd();
             $this->error = false;
 
-        } catch (Exception $e) { // TODO: SSv4: Catch Throwable so PHP 7/8 errors retain their details.
+        } catch (Throwable $e) {
             $this->shutdown($e);
         }
 
@@ -124,11 +123,10 @@ class MigrateTask extends BuildTask {
      * Will always execute after any/all migrations have run. The purpose of this is to clean up and to handle any
      * unexpected errors which may occur.
      *
-     * TODO: SSv4: Accept Throwable so PHP 7/8 errors can be reported.
-     *
-     * @param   Exception|null $e
+     * @param   Throwable|null $e
+     * @return  void
      */
-    public function shutdown(Exception $e = null) {
+    public function shutdown(?Throwable $e = null) {
         // Run once.
         if ($this->shutdown) return;
         $this->shutdown = true;

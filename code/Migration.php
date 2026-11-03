@@ -2,7 +2,6 @@
 
 namespace PatrickNelson\Migrations;
 
-use Exception;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Control\Session;
 use SilverStripe\Core\ClassInfo;
@@ -17,6 +16,7 @@ use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
+use Throwable;
 
 /**
  * All migrations that must be executed must be descended from this class and define both an ->up() and a ->down()
@@ -25,7 +25,6 @@ use SilverStripe\Versioned\Versioned;
  * @author    Patrick Nelson, pat@catchyour.com
  * @since    2015-02-17
  */
-
 abstract class Migration implements MigrationInterface {
 
     protected $obsolete = false;
@@ -291,7 +290,7 @@ abstract class Migration implements MigrationInterface {
                 }
             });
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             throw new MigrationException("Cannot publish page: " . $e->getMessage(), 0, $e);
         }
     }
@@ -307,7 +306,7 @@ abstract class Migration implements MigrationInterface {
             static::whileAdmin(function () use ($page) {
                 $page->doUnpublish();
             });
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             throw new MigrationException("Cannot unpublish page: " . $e->getMessage(), 0, $e);
         }
     }
@@ -325,7 +324,7 @@ abstract class Migration implements MigrationInterface {
      *
      * TODO: SSv4: Modernize, will not work yet as is.
      *
-     * @throws    MigrationException|Exception
+     * @throws    MigrationException|Throwable
      */
     protected static function whileAdmin(callable $closure) {
         // Keeps track of the fact that a temporary admin was just created so we can delete it later.
@@ -352,16 +351,11 @@ abstract class Migration implements MigrationInterface {
         // Call passed closure.
         try {
             call_user_func($closure);
-        } catch (Exception $e) {
-            // Deferred. Throwing exception below (need to support PHP 5.4, so no "finally").
+        } finally {
+            // Clean up even when PHP raises an Error rather than an Exception.
+            Session::set("loggedInAs", null);
+            if ($tempAdmin && $admin) $admin->delete();
         }
-
-        // Clean up.
-        Session::set("loggedInAs", null);
-        if ($tempAdmin && $admin) $admin->delete();
-
-        // Throw the exception if one occurred (in lieu of a "finally" block in older PHP versions).
-        if (isset($e)) throw $e;
     }
 
     /**
@@ -394,7 +388,7 @@ abstract class Migration implements MigrationInterface {
      * @param   callable|null   $transformation
      * @throws  MigrationException|ValidationException
      */
-    public static function transitionField(DataObject $dataObject, $oldFieldName, $newFieldName, callable $transformation = null) {
+    public static function transitionField(DataObject $dataObject, $oldFieldName, $newFieldName, ?callable $transformation = null) {
         // Get and transform data (if applicable).
         $value = static::getRowValueFromTable(get_class($dataObject), $oldFieldName, $dataObject->ID); // TODO: SSv4: Resolve the table name separately from the class name.
         if ($transformation) $value = call_user_func($transformation, $value);
@@ -421,7 +415,7 @@ abstract class Migration implements MigrationInterface {
      * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect.
      * @throws  MigrationException
      */
-    public static function copyTable($fromTable, $toTable, array $fieldMapping = null, $purgeDest = false, $where = null) {
+    public static function copyTable($fromTable, $toTable, ?array $fieldMapping = null, $purgeDest = false, $where = null) {
         if (!static::tableExists($fromTable)) throw new MigrationException("Table '$fromTable' does not exist.");
         if (!static::tableExists($toTable)) throw new MigrationException("Table '$fromTable' does not exist.");
 
@@ -487,7 +481,7 @@ abstract class Migration implements MigrationInterface {
      * @param   mixed|null  $where
      * @throws  MigrationException
      */
-    public static function copyVersionedTable($fromObject, $toObject, array $fieldMapping = null, $purgeDest = false, $where = null) {
+    public static function copyVersionedTable($fromObject, $toObject, ?array $fieldMapping = null, $purgeDest = false, $where = null) {
         // Quick validation.
         foreach(array($fromObject, $toObject) as $validateObject) {
             if (!class_exists($validateObject)) throw new MigrationException("'$validateObject' doesn't appear to be an object.");
