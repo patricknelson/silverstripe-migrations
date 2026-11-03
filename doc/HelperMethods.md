@@ -1,4 +1,4 @@
-# SilverStripe 3.x Database Migrations
+# SilverStripe Database Migrations
 
 ## Helper Methods
 
