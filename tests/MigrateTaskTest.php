@@ -5,7 +5,6 @@ namespace PatrickNelson\Migrations\Tests;
 use Exception;
 use PatrickNelson\Migrations\MigrateTask;
 use PatrickNelson\Migrations\Migration;
-use PatrickNelson\Migrations\MigrationInterface;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
@@ -81,7 +80,7 @@ class MigrateTaskTest extends SapphireTest {
 
 }
 
-class Migration_UnitTestOnly extends Migration implements TestOnly, MigrationInterface {
+class Migration_UnitTestOnly extends Migration implements TestOnly {
 
 	public static $throwException = false;
 

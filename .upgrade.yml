@@ -4,4 +4,3 @@ mappings:
   Migration: PatrickNelson\Migrations\Migration
   MigrationBoilerplate: PatrickNelson\Migrations\MigrationBoilerplate
   MigrationException: PatrickNelson\Migrations\MigrationException
-  MigrationInterface: PatrickNelson\Migrations\MigrationInterface
