@@ -1,0 +1,6 @@
+mappings:
+  DatabaseMigrations: PatrickNelson\Migrations\DatabaseMigrations
+  MigrateTask: PatrickNelson\Migrations\MigrateTask
+  Migration: PatrickNelson\Migrations\Migration
+  MigrationBoilerplate: PatrickNelson\Migrations\MigrationBoilerplate
+  MigrationException: PatrickNelson\Migrations\MigrationException

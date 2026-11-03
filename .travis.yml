@@ -1,4 +1,5 @@
-language: php 
+# TODO: SSv4: Remove this. Move to GH Actions instead.
+language: php
 
 php:
   - 5.4
@@ -10,7 +11,7 @@ env:
   matrix:
     - DB=MYSQL
     - DB=SQLITE
-    - DB=PGSQL 
+    - DB=PGSQL
 
 matrix:
   allow_failures:
@@ -34,5 +35,5 @@ before_script:
  - php ~/travis-support/travis_setup.php --source `pwd` --target ~/builds/ss
  - cd ~/builds/ss
 
-script: 
+script:
  - vendor/bin/phpunit migrations/tests/

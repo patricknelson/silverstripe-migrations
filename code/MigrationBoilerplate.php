@@ -1,5 +1,7 @@
 <?php
 
+namespace PatrickNelson\Migrations;
+
 class MigrationBoilerplate extends Migration {
 
     /**
