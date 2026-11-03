@@ -8,7 +8,6 @@ namespace PatrickNelson\Migrations;
  * @author   Patrick Nelson, pat@catchyour.com
  * @since    2016-04-25
  */
-
 interface MigrationInterface {
 
 	public function up();
