@@ -267,17 +267,24 @@ abstract class Migration {
     }
 
     /**
-     * Simplifies publishing of an actual page instance (since migrations are run from command line).
+     * Simplifies saving and publishing of pages, since migrations are run from command line.
+     *
+     * NOTE: By default, this method will skip publishing if the page already has a draft version in the database with
+     * pending changes. This allows you to do the following without worrying about accidentally forcing other unexpected
+     * changes live:
+     *
+     *     $page->Title = 'New Page Title';
+     *     static::publish($page);
+     *
+     * If the page *does* have pending changes, it will simply save the updated draft and move on.
      *
      * @param  SiteTree  $page
-     * @param  bool      $force  If set to false, will not publish if the page has a draft version to prevent
-     *                           accidentally publishing a draft page.
-     *
-     * TODO: Possibly change default for $force to false, but will need to start versioning this module to help prevent issues with backward compatibility.
+     * @param  bool      $force  By default, this will skip publishing if the page currently has a draft version to
+     *                           prevent accidentally pushing changes live. Override by explicitly setting this to true.
      *
      * @throws    MigrationException
      */
-    public static function publish(SiteTree $page, bool $force = true): void {
+    public static function publish(SiteTree $page, bool $force = false): void {
         try {
             static::whileAdmin(function () use ($page, $force) {
                 if (!$page->isModifiedOnDraft() || $force) {
@@ -364,10 +371,10 @@ abstract class Migration {
      * @throws  MigrationException
      */
     public static function setPageType(SiteTree $page, string $pageType): void {
-        if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+        if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specified page type '$pageType' must be an instance (or child) of 'SiteTree'.");
         /** @var SiteTree $page */
         $page = $page->newClassInstance($pageType);
-        static::publish($page);
+        static::publish($page, true);
     }
 
     /**
@@ -394,7 +401,7 @@ abstract class Migration {
         $dataObject->setField($newFieldName, $value);
         if ($dataObject instanceof SiteTree) {
             // Save + publish update if already published, being careful not to publish if currently unpublished.
-            static::publish($dataObject, false);
+            static::publish($dataObject);
         } else {
             $dataObject->write();
         }
