@@ -15,7 +15,6 @@ use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
-use SilverStripe\Versioned\Versioned;
 use Throwable;
 
 /**
@@ -40,8 +39,8 @@ abstract class Migration implements MigrationInterface {
      *
      * @return bool
      */
-    public function isObsolete() {
-        return $this->obsolete;
+    public function isObsolete(): bool {
+        return (bool) $this->obsolete;
     }
 
     #######################################
@@ -54,7 +53,7 @@ abstract class Migration implements MigrationInterface {
      * @param   string  $table
      * @return  bool
      */
-    public static function tableExists($table) {
+    public static function tableExists(string $table): bool {
         $tables = DB::tableList(); // TODO: SSv4: Missing method
         return array_key_exists(strtolower($table), $tables);
     }
@@ -66,7 +65,7 @@ abstract class Migration implements MigrationInterface {
      * @param   string  $column
      * @return  bool
      */
-    public static function tableColumnExists($table, $column) {
+    public static function tableColumnExists(string $table, string $column): bool {
         if (!self::tableExists($table)) return false;
         $columns = self::getTableColumns($table);
         return array_key_exists($column, $columns);
@@ -75,11 +74,11 @@ abstract class Migration implements MigrationInterface {
     /**
      * Returns true if an array of columns exist on a database table
      *
-     * @param   string     $table
-     * @param   array      $columns
+     * @param   string  $table
+     * @param   array   $columns
      * @return  bool
      */
-    public static function tableColumnsExist($table, array $columns) {
+    public static function tableColumnsExist(string $table, array $columns): bool {
         if (!self::tableExists($table)) return false;
         return count(array_intersect($columns, array_keys(self::getTableColumns($table)))) === count($columns);
     }
@@ -90,8 +89,8 @@ abstract class Migration implements MigrationInterface {
      * @param   string  $table
      * @return  array   (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
      */
-    public static function getTableColumns($table) {
-        if (!self::tableExists($table)) return array();
+    public static function getTableColumns(string $table): array {
+        if (!self::tableExists($table)) return [];
         return DB::fieldList($table); // TODO: SSv4: Missing method
     }
 
@@ -100,11 +99,11 @@ abstract class Migration implements MigrationInterface {
      * merged at runtime. This will actually iterate through the class ancestry in order to determine the table in which
      * a field actually exists.
      *
-     * @param	string	$className
-     * @param	string	$field
-     * @return	string
+     * @param   string  $className
+     * @param   string  $field
+     * @return  string
      */
-    public static function getTableForField($className, $field) {
+    public static function getTableForField(string $className, string $field): string {
         // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
         $ancestors = ClassInfo::ancestry($className, true);
         foreach($ancestors as $ancestor) {
@@ -121,12 +120,12 @@ abstract class Migration implements MigrationInterface {
      * Drops columns from a database table.
      * Returns array of columns that were dropped
      *
-     * @param   string     $table
-     * @param   array      $columns
-     * @return  array
+     * @param   string    $table
+     * @param   array     $columns
+     * @return  string[]
      */
-    public static function dropColumnsFromTable($table, array $columns) {
-        $droppedColumns = array();
+    public static function dropColumnsFromTable(string $table, array $columns): array {
+        $droppedColumns = [];
         $columnsInTable = array_intersect($columns, array_keys(self::getTableColumns($table)));
         if (!$columnsInTable) return $droppedColumns;
         $table = Convert::raw2sql($table);
@@ -141,20 +140,20 @@ abstract class Migration implements MigrationInterface {
      * Add columns to a database table if they don't exist.
      * Returns array of columns that were added
      *
-     * @param   string      $table
-     * @param   array       $columns    e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
-     * @return  array
+     * @param   string    $table
+     * @param   array     $columns    e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
+     * @return  string[]
      */
-    public static function addColumnsToTable($table, array $columns) {
-        $addedColumns = array();
+    public static function addColumnsToTable(string $table, array $columns): array {
+        $addedColumns = [];
         $existingColumns = self::getTableColumns($table);
         if (!$existingColumns) return $addedColumns;
         $table = Convert::raw2sql($table);
         foreach ($columns as $column => $properties) {
             if (!array_key_exists($column, $existingColumns)) {
                 DB::query(
-                    "ALTER TABLE $table" . " ADD " . Convert::raw2sql($column)
-                    . " " . Convert::raw2sql($properties) . ";"
+                    "ALTER TABLE $table ADD " . Convert::raw2sql($column)
+                    . ' ' . Convert::raw2sql($properties) . ';'
                 );
                 $addedColumns[] = $column;
             }
@@ -173,12 +172,11 @@ abstract class Migration implements MigrationInterface {
      * @param   int     $id
      * @return  string
      */
-    public static function getRowValueFromTable($table, $field, $id) {
+    public static function getRowValueFromTable(string $table, string $field, int $id): string {
         $value = null;
         if (self::tableColumnExists($table, $field)) {
-            $id = (int)$id;
             $query = new SQLSelect();
-            $query->setFrom($table)->setSelect(array($field))->setWhere("ID = $id");
+            $query->setFrom($table)->setSelect([$field])->setWhere("ID = $id");
             $results = $query->execute();
             if ($results) {
                 foreach ($results as $result) {
@@ -196,15 +194,14 @@ abstract class Migration implements MigrationInterface {
      * and therefore are no longer accessible through the ORM.
      * Returns an empty array if the table, any of the columns or the row do not exist.
      *
-     * @param    string         $table
-     * @param    array          $fields
-     * @param    string|int     $id
-     * @return   array          array('FieldName' => value)
+     * @param    string  $table
+     * @param    array   $fields
+     * @param    int     $id
+     * @return   array   array{string: mixed}
      */
-    public static function getRowValuesFromTable($table, array $fields, $id) {
-        $values = array();
+    public static function getRowValuesFromTable(string $table, array $fields, int $id): array {
+        $values = [];
         if (self::tableColumnsExist($table, $fields)) {
-            $id = (int)$id;
             $query = new SQLSelect();
             $query->setFrom($table)->setSelect($fields)->setWhere("ID = $id");
             $results = $query->execute();
@@ -227,14 +224,14 @@ abstract class Migration implements MigrationInterface {
      * Returns false if the table or any of the rows do not exist.
      * Returns true if the SQL query was executed.
      *
-     * @param   string      $table
-     * @param   array       $values     Ex: array('FieldName' => value)
-     * @param   int|null    $id         Note: Null only works here if $insert = true.
-     * @param   bool        $insert     Allows insertion of a new record if the ID provided is null or doesn't exist.
-     *                                  NOTE: If an "ID" field is passed, that ID value will be retained.
-     * @return  bool                 Will return true if anything was changed, false otherwise.
+     * @param   string    $table
+     * @param   array     $values  Ex: ['FieldName' => value]
+     * @param   int|null  $id      Note: Null only works here if $insert = true.
+     * @param   bool      $insert  Allows insertion of a new record if the ID provided is null or doesn't exist.
+     *                             NOTE: If an "ID" field is passed, that ID value will be retained.
+     * @return  bool               Will return true if anything was changed, false otherwise.
      */
-    public static function setRowValuesOnTable($table, array $values, $id = null, $insert = false) {
+    public static function setRowValuesOnTable(string $table, array $values, ?int $id = null, bool $insert = false): bool {
         // TODO: This should maybe throw an exception instead.
         if (!self::tableColumnsExist($table, array_keys($values))) return false;
 
@@ -244,7 +241,7 @@ abstract class Migration implements MigrationInterface {
             // Ensure the ID we're checking now is the same as the one we're inserting to help prevent issues with duplicate keys.
             $checkID = $id;
             if (isset($values['ID'])) $checkID = $values['ID'];
-            $select = new SQLSelect('COUNT(*)', $table, array('ID' => $checkID));
+            $select = new SQLSelect('COUNT(*)', $table, ['ID' => $checkID]);
             $result = $select->execute();
             $exists = (bool) (int) $result->value();
         }
@@ -254,7 +251,7 @@ abstract class Migration implements MigrationInterface {
 
         if ($exists) {
             // Generate an execute an UPDATE query.
-            $update = new SQLUpdate($table, $values, array('ID' => $id));
+            $update = new SQLUpdate($table, $values, ['ID' => $id]);
             $update->execute();
             return true;
 
@@ -272,15 +269,15 @@ abstract class Migration implements MigrationInterface {
     /**
      * Simplifies publishing of an actual page instance (since migrations are run from command line).
      *
-     * @param    SiteTree   $page
-     * @param    bool       $force  If set to false, will not publish if the page has a draft version to prevent
-     *                              accidentally publishing a draft page.
+     * @param  SiteTree  $page
+     * @param  bool      $force  If set to false, will not publish if the page has a draft version to prevent
+     *                           accidentally publishing a draft page.
      *
      * TODO: Possibly change default for $force to false, but will need to start versioning this module to help prevent issues with backward compatibility.
      *
      * @throws    MigrationException
      */
-    public static function publish(SiteTree $page, $force = true) {
+    public static function publish(SiteTree $page, bool $force = true): void {
         try {
             static::whileAdmin(function () use ($page, $force) {
                 if (!$page->isModifiedOnDraft() || $force) {
@@ -291,7 +288,7 @@ abstract class Migration implements MigrationInterface {
             });
 
         } catch (Throwable $e) {
-            throw new MigrationException("Cannot publish page: " . $e->getMessage(), 0, $e);
+            throw new MigrationException('Cannot publish page: ' . $e->getMessage(), 0, $e);
         }
     }
 
@@ -301,13 +298,13 @@ abstract class Migration implements MigrationInterface {
      * @param   SiteTree            $page
      * @throws  MigrationException
      */
-    public static function unpublish(SiteTree $page) {
+    public static function unpublish(SiteTree $page): void {
         try {
             static::whileAdmin(function () use ($page) {
                 $page->doUnpublish();
             });
         } catch (Throwable $e) {
-            throw new MigrationException("Cannot unpublish page: " . $e->getMessage(), 0, $e);
+            throw new MigrationException('Cannot unpublish page: ' . $e->getMessage(), 0, $e);
         }
     }
 
@@ -319,12 +316,12 @@ abstract class Migration implements MigrationInterface {
      * creation of a default admin account below is necessary because SilverStripe will reference global state via
      * Member::currentUser() and the only surefire way around this is to login as a default admin with full access.
      *
-     * @param    callable $closure      The closure (or class/method array) that you'd like to execute while logged in
-     *                                  as an admin.
+     * @param   callable $closure  The closure (or class/method array) that you'd like to execute while logged in
+     *                             as an admin.
      *
      * TODO: SSv4: Modernize, will not work yet as is.
      *
-     * @throws    MigrationException|Throwable
+     * @throws  MigrationException|Throwable
      */
     protected static function whileAdmin(callable $closure) {
         // Keeps track of the fact that a temporary admin was just created so we can delete it later.
@@ -336,16 +333,16 @@ abstract class Migration implements MigrationInterface {
             if (!Security::has_default_admin()) {
                 // Generate a randomized user/pass and use that as the default administrator just for this session.
                 $tempAdmin = true;
-                $user = substr(str_shuffle(sha1("u" . microtime())), 0, 20);
-                $pass = substr(str_shuffle(sha1("p" . microtime())), 0, 20);
+                $user = substr(str_shuffle(sha1('u' . microtime())), 0, 20);
+                $pass = substr(str_shuffle(sha1('p' . microtime())), 0, 20);
                 Security::setDefaultAdmin($user, $pass);
             }
 
             $admin = Member::default_admin();
-            if (!$admin) throw new MigrationException("Cannot login: No default administrator found.");
+            if (!$admin) throw new MigrationException('Cannot login: No default administrator found.');
 
             Session::start();
-            Session::set("loggedInAs", $admin->ID);
+            Session::set('loggedInAs', $admin->ID);
         }
 
         // Call passed closure.
@@ -353,7 +350,7 @@ abstract class Migration implements MigrationInterface {
             call_user_func($closure);
         } finally {
             // Clean up even when PHP raises an Error rather than an Exception.
-            Session::set("loggedInAs", null);
+            Session::set('loggedInAs', null);
             if ($tempAdmin && $admin) $admin->delete();
         }
     }
@@ -362,11 +359,11 @@ abstract class Migration implements MigrationInterface {
      * Shorthand to make it easier to update the page type, since SilverStripe has a very specific method for
      * accomplishing this.
      *
-     * @param    SiteTree $page
-     * @param    string $pageType
-     * @throws    MigrationException
+     * @param   SiteTree $page
+     * @param   string   $pageType
+     * @throws  MigrationException
      */
-    public static function setPageType(SiteTree $page, $pageType) {
+    public static function setPageType(SiteTree $page, string $pageType): void {
         if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specifed page type '$pageType' must be an instance (or child) of 'SiteTree'.");
         /** @var SiteTree $page */
         $page = $page->newClassInstance($pageType);
@@ -382,13 +379,13 @@ abstract class Migration implements MigrationInterface {
      *
      * TODO: An issue with SiteTree objects is unpublished instances will not update the currently published version (if one exists).
      *
-     * @param   DataObject      $dataObject
-     * @param   string          $oldFieldName
-     * @param   string          $newFieldName
-     * @param   callable|null   $transformation
+     * @param   DataObject     $dataObject
+     * @param   string         $oldFieldName
+     * @param   string         $newFieldName
+     * @param   callable|null  $transformation
      * @throws  MigrationException|ValidationException
      */
-    public static function transitionField(DataObject $dataObject, $oldFieldName, $newFieldName, ?callable $transformation = null) {
+    public static function transitionField(DataObject $dataObject, string $oldFieldName, string $newFieldName, ?callable $transformation = null): void {
         // Get and transform data (if applicable).
         $value = static::getRowValueFromTable(get_class($dataObject), $oldFieldName, $dataObject->ID); // TODO: SSv4: Resolve the table name separately from the class name.
         if ($transformation) $value = call_user_func($transformation, $value);
@@ -415,13 +412,13 @@ abstract class Migration implements MigrationInterface {
      * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect.
      * @throws  MigrationException
      */
-    public static function copyTable($fromTable, $toTable, ?array $fieldMapping = null, $purgeDest = false, $where = null) {
+    public static function copyTable(string $fromTable, string $toTable, ?array $fieldMapping = null, bool $purgeDest = false, mixed $where = null): void {
         if (!static::tableExists($fromTable)) throw new MigrationException("Table '$fromTable' does not exist.");
         if (!static::tableExists($toTable)) throw new MigrationException("Table '$fromTable' does not exist.");
 
         // Initialize defaults.
-        if ($fieldMapping === null) $fieldMapping = array(); // Normalize to empty.
-        if ($fieldMapping === array()) {
+        if ($fieldMapping === null) $fieldMapping = []; // Normalize to empty.
+        if ($fieldMapping === []) {
             // If empty: Use all fields from the source.
             $fieldMapping = array_keys(static::getTableColumns($fromTable));
         }
@@ -453,9 +450,9 @@ abstract class Migration implements MigrationInterface {
         $select = new SQLSelect($sourceFields, $fromTable);
         if ($where !== null) $select->setWhere($where);
         $result = $select->execute();
-        while($sourceRow = $result->next()) {
+        while($sourceRow = $result->next()) { // TODO: SSv5: Move to iterator pattern
             // Convert row fields based on our mapping.
-            $destRow = array();
+            $destRow = [];
             foreach($sourceRow as $field => $value) {
                 if (array_key_exists($field, $fieldMapping)) $field = $fieldMapping[$field];
                 $destRow[$field] = $value;
@@ -472,30 +469,18 @@ abstract class Migration implements MigrationInterface {
      *
      * NOTE: Please see ::copyTable() for more details on the parameters below.
      *
-     * TODO: SSv4: Use mapped table names and handle versioned-only objects without a Live table.
-     *
-     * @param   string      $fromObject     The name of SOURCE versioned object to copy field data from.
-     * @param   string      $toObject       The name of DESTINATION versioned object to copy field data to.
+     * @param   string      $fromBaseTable  The name of SOURCE base table name to copy field data from.
+     * @param   string      $toBaseTable    The name of DESTINATION base table name to copy field data to.
      * @param   array|null  $fieldMapping
      * @param   bool        $purgeDest
      * @param   mixed|null  $where
+     *
      * @throws  MigrationException
      */
-    public static function copyVersionedTable($fromObject, $toObject, ?array $fieldMapping = null, $purgeDest = false, $where = null) {
-        // Quick validation.
-        foreach(array($fromObject, $toObject) as $validateObject) {
-            if (!class_exists($validateObject)) throw new MigrationException("'$validateObject' doesn't appear to be an object.");
-            if (is_a($validateObject, DataObject::class)) throw new MigrationException("'$validateObject' must be an instance of DataObject.");
-
-            /** @var $validateInstance DataObject */
-            $validateInstance = singleton($validateObject);
-            if (!$validateInstance->hasExtension(Versioned::class)) throw new MigrationException("'$validateObject' must be a versioned object (i.e. have the Versioned extension).");
-        }
-
-        // Repeat on each instance of the objects' tables.
-        $suffixes = array('', '_Live', '_Versions');
+    public static function copyVersionedTable(string $fromBaseTable, string $toBaseTable, ?array $fieldMapping = null, bool $purgeDest = false, mixed $where = null): void {
+        $suffixes = ['', '_Live', '_Versions'];
         foreach($suffixes as $suffix) {
-            self::copyTable($fromObject . $suffix, $toObject . $suffix, $fieldMapping, $purgeDest, $where);
+            self::copyTable($fromBaseTable . $suffix, $toBaseTable . $suffix, $fieldMapping, $purgeDest, $where);
         }
     }
 

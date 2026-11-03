@@ -63,17 +63,17 @@ class MigrateTask extends BuildTask {
     public function run($request) {
         // Only allow execution from the command line (for simplicity and security).
         if (!Director::is_cli()) {
-            echo "<p>Sorry, but this can only be run from the command line.</p>";
+            echo '<p>Sorry, but this can only be run from the command line.</p>';
             return;
         }
 
         // Get and pre-process arguments. Format: ["argument" => true, "make" => "filename", ... ]
         $getVars = $request->getVars();
         $args = array();
-        if (isset($getVars["args"]) && is_array($getVars["args"])) {
-            foreach ($getVars["args"] as $arg) {
+        if (isset($getVars['args']) && is_array($getVars['args'])) {
+            foreach ($getVars['args'] as $arg) {
                 // Separate keys/values.
-                $argVals = explode(":", $arg, 2);
+                $argVals = explode(':', $arg, 2);
                 $key = $argVals[0];
                 $value = true;
                 if (count($argVals) > 1) $value = $argVals[1];
@@ -83,19 +83,19 @@ class MigrateTask extends BuildTask {
 
         // Use a shutdown function to help clean up and track final exit status, in case an unexpected fatal error occurs.
         $this->error = true;
-        register_shutdown_function(array($this, "shutdown"));
+        register_shutdown_function(array($this, 'shutdown'));
 
         // Determine action to take. Wrap everything in a transaction so it can be rolled back in case of error.
         DB::get_conn()->transactionStart();
         try {
-            if (isset($args["up"])) {
+            if (isset($args['up'])) {
                 $this->up();
 
-            } elseif (isset($args["down"])) {
+            } elseif (isset($args['down'])) {
                 $this->down();
 
-            } elseif (isset($args["make"])) {
-                $this->make($args["make"]);
+            } elseif (isset($args['make'])) {
+                $this->make($args['make']);
 
             } else {
                 throw new MigrationException("Invalid or no migration arguments provided. Please specify either: 'up', 'down' or 'make:name_of_your_migration'.");
@@ -125,11 +125,11 @@ class MigrateTask extends BuildTask {
         $this->shutdown = true;
 
         // If there's an error but no exception, setup an exception now for reporting purposes.
-        if ($this->error && !$e) $e = new MigrationException("The migration" . ($this->lastMigrationFile ? " '$this->lastMigrationFile.php'" : "") . " terminated unexpectedly.");
+        if ($this->error && !$e) $e = new MigrationException('The migration' . ($this->lastMigrationFile ? " '$this->lastMigrationFile.php'" : '') . ' terminated unexpectedly.');
         if ($e) {
             // Rollback database changes and notify user.
             DB::get_conn()->transactionRollback();
-            $this->output("ERROR" . ($e->getCode() != 0 ? " (" . $e->getCode() . ")" : "") . ": " . $e->getMessage());
+            $this->output('ERROR' . ($e->getCode() != 0 ? ' (' . $e->getCode() . ')' : '') . ': ' . $e->getMessage());
             $this->output("\nNote: Any database changes have been rolled back.");
             $this->output("\nStack Trace:");
             $this->output($e->getTraceAsString());
@@ -157,7 +157,7 @@ class MigrateTask extends BuildTask {
         // Get all already executed migrations and queue up only the ones that haven't run (based on filename).
         $queue = array_diff_key($this->getAllMigrations(), $this->getRunMigrations());
         if (empty($queue)) {
-            $this->output("There are no new migrations.");
+            $this->output('There are no new migrations.');
             return;
         }
 
@@ -192,7 +192,7 @@ class MigrateTask extends BuildTask {
     public function down() {
         $lastMigrations = static::getRunMigrations(true);
         if (empty($lastMigrations)) {
-            $this->output("There are no migrations to reverse.");
+            $this->output('There are no migrations to reverse.');
             return;
         }
 
@@ -208,7 +208,7 @@ class MigrateTask extends BuildTask {
             }
 
             // Remove this migration from the database now.
-            DatabaseMigrations::get()->filter("BaseName", $baseName)->first()->delete();
+            DatabaseMigrations::get()->filter('BaseName', $baseName)->first()->delete();
 
             $this->output("Reversed: $baseName");
         }
@@ -234,18 +234,18 @@ class MigrateTask extends BuildTask {
 
         // Normalize the base name to strip out unexpected characters.
         $baseName = strtolower($baseName);
-        $baseName = trim(preg_replace("#[^a-z0-9]+#", "_", $baseName), "_");
+        $baseName = trim(preg_replace('#[^a-z0-9]+#', '_', $baseName), '_');
 
         // Ensure a valid base name was provided.
-        if ($baseName === "") throw new MigrationException("Please provide a valid basename. It can contain only numbers, letters and underscores.");
+        if ($baseName === '') throw new MigrationException('Please provide a valid basename. It can contain only numbers, letters and underscores.');
 
         // Setup a filename based on the current timestamp with the prefix.
-        $filename = date("Y_m_d_His") . "_" . $baseName . ".php";
+        $filename = date('Y_m_d_His') . '_' . $baseName . '.php';
         $filePath = $migrationPath . DIRECTORY_SEPARATOR . $filename;
 
         // Generate a camel cased class name based on the snake cased base name provided. Basically we're just taking
         // underscores, replacing with spaces and using "ucwords()" to capitalize what we need and then removing those spaces.
-        $camelCase = "Migration_" . str_replace(" ", "", ucwords(strtolower(trim(str_replace("_", " ", $baseName)))));
+        $camelCase = 'Migration_' . str_replace(' ', '', ucwords(strtolower(trim(str_replace('_', ' ', $baseName)))));
 
         // Do a quick check to make sure this class doesn't already exist...
         if (class_exists($camelCase)) {
@@ -295,7 +295,7 @@ class MigrateTask extends BuildTask {
      */
     public static function getMigrationPath() {
         // TODO: SSv4: Move to YAML configuration instead.
-        if (defined("MIGRATION_PATH")) {
+        if (defined('MIGRATION_PATH')) {
             // Migration path defined by constant.
             $migrationPath = MIGRATION_PATH;
 
@@ -305,7 +305,7 @@ class MigrateTask extends BuildTask {
             if (empty($project)) throw new MigrationException("Please either define a global '\$project' variable or define a MIGRATION_PATH constant in order to setup a path for migration files to live.");
 
             // Build path. TODO: SSv4: Double check that project() above and the "src" here are the best approach. Check for alternatives.
-            $migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, "src", "migrations"));
+            $migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, 'src', 'migrations'));
         }
 
         return $migrationPath;
@@ -324,7 +324,7 @@ class MigrateTask extends BuildTask {
         foreach ($classes as $className) {
             // Get actual filename of migration class and use that as the key.
             $reflect = new ReflectionClass($className);
-            $filename = basename($reflect->getFileName(), ".php");
+            $filename = basename($reflect->getFileName(), '.php');
             $classesOrdered[$filename] = $className;
         }
         ksort($classesOrdered);
@@ -339,7 +339,7 @@ class MigrateTask extends BuildTask {
      */
     public static function getRunMigrations($latest = false) {
         $query = DatabaseMigrations::get();
-        if ($latest) $query = $query->filter("Batch", static::getLatestBatch());
+        if ($latest) $query = $query->filter('Batch', static::getLatestBatch());
 
         // Return an array of migrations as the base name (filename) as the key and associated migration class as the value.
         $migrations = array();
@@ -355,7 +355,7 @@ class MigrateTask extends BuildTask {
      * @return  int
      */
     public static function getLatestBatch() {
-        return (int)DatabaseMigrations::get()->max("Batch");
+        return (int)DatabaseMigrations::get()->max('Batch');
     }
 
 }

@@ -36,7 +36,7 @@ class MigrateTaskTest extends SapphireTest {
 	public function testEnsureWorking() {
 		// Just a generic test to make sure unit testing is working.
 		$task = new MigrateTask();
-		$this->assertStringContainsString("migrations", $task->getMigrationPath());
+		$this->assertStringContainsString('migrations', $task->getMigrationPath());
 	}
 
 	public function testLatestBatch() {
@@ -74,8 +74,8 @@ class MigrateTaskTest extends SapphireTest {
 	 * TODO: SSv4: Expect mapped table names instead of namespaced class names.
 	 */
 	public function testGetTableForField() {
-	    $this->assertEquals(Migration_TestParent::class,     Migration::getTableForField(Migration_TestGrandchild::class, 'ParentField'));
-	    $this->assertEquals(Migration_TestChild::class,      Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));
+	    $this->assertEquals(Migration_TestParent::class, Migration::getTableForField(Migration_TestGrandchild::class, 'ParentField'));
+	    $this->assertEquals(Migration_TestChild::class, Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));
 	    $this->assertEquals(Migration_TestGrandchild::class, Migration::getTableForField(Migration_TestGrandchild::class, 'Grandchild'));
 	}
 
@@ -97,12 +97,12 @@ class Migration_UnitTestOnly extends Migration implements TestOnly, MigrationInt
 		static::exceptionator();
 	}
 
-	public function isObsolete() {
+	public function isObsolete(): bool {
 		return false;
 	}
 
 	protected static function exceptionator() {
-		if (static::$throwException) throw new Exception("Test exception.");
+		if (static::$throwException) throw new Exception('Test exception.');
 	}
 
 }
