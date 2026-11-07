@@ -365,9 +365,9 @@ abstract class Migration {
      * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect.
      * @throws  MigrationException
      */
-    public static function copyTable(string $fromTable, string $toTable, ?array $fieldMapping = null, bool $purgeDest = false, mixed $where = null): void {
+    public static function copyTable(string $fromTable, string $toTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null): void {
         if (!static::tableExists($fromTable)) throw new MigrationException("Table '$fromTable' does not exist.");
-        if (!static::tableExists($toTable)) throw new MigrationException("Table '$fromTable' does not exist.");
+        if (!static::tableExists($toTable)) throw new MigrationException("Table '$toTable' does not exist.");
 
         // Initialize defaults.
         if ($fieldMapping === null) $fieldMapping = []; // Normalize to empty.
