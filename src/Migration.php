@@ -51,7 +51,7 @@ abstract class Migration {
      * @return  bool
      */
     public static function tableExists(string $table): bool {
-        $tables = DB::tableList(); // TODO: SSv4: Missing method
+        $tables = DB::get_schema()->tableList();
         return array_key_exists(strtolower($table), $tables);
     }
 
@@ -88,7 +88,7 @@ abstract class Migration {
      */
     public static function getTableColumns(string $table): array {
         if (!self::tableExists($table)) return [];
-        return DB::fieldList($table); // TODO: SSv4: Missing method
+        return DB::get_schema()->fieldList($table);
     }
 
     /**
@@ -102,10 +102,12 @@ abstract class Migration {
      */
     public static function getTableForField(string $className, string $field): string {
         // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
-        $ancestors = ClassInfo::ancestry($className, true);
+        $ancestors = ClassInfo::ancestry($className);
         foreach($ancestors as $ancestor) {
-            if (DataObject::getSchema()->tableForField($ancestor, $field)) {
-                return $ancestor; // TODO: SSv4: Return the mapped table name, not the namespaced class name.
+            if ($ancestor === DataObject::class || !is_subclass_of($ancestor, DataObject::class)) continue;
+            $table = DataObject::getSchema()->tableName($ancestor);
+            if ($table && static::tableColumnExists($table, $field)) {
+                return $table;
             }
         }
 
@@ -125,9 +127,9 @@ abstract class Migration {
         $droppedColumns = [];
         $columnsInTable = array_intersect($columns, array_keys(self::getTableColumns($table)));
         if (!$columnsInTable) return $droppedColumns;
-        $table = Convert::raw2sql($table);
+        $tableSql = Convert::symbol2sql($table);
         foreach ($columnsInTable as $column) {
-            DB::query("ALTER TABLE $table DROP COLUMN " . Convert::raw2sql($column) . ";");
+            DB::query("ALTER TABLE $tableSql DROP COLUMN " . Convert::symbol2sql($column));
             $droppedColumns[] = $column;
         }
         return $droppedColumns;
@@ -145,12 +147,12 @@ abstract class Migration {
         $addedColumns = [];
         $existingColumns = self::getTableColumns($table);
         if (!$existingColumns) return $addedColumns;
-        $table = Convert::raw2sql($table);
+        $tableSql = Convert::symbol2sql($table);
         foreach ($columns as $column => $properties) {
             if (!array_key_exists($column, $existingColumns)) {
                 DB::query(
-                    "ALTER TABLE $table ADD " . Convert::raw2sql($column)
-                    . ' ' . Convert::raw2sql($properties) . ';'
+                    "ALTER TABLE $tableSql ADD " . Convert::symbol2sql($column)
+                    . ' ' . $properties
                 );
                 $addedColumns[] = $column;
             }
@@ -167,13 +169,14 @@ abstract class Migration {
      * @param   string  $table
      * @param   string  $field
      * @param   int     $id
-     * @return  string
+     * @return  string|null
      */
-    public static function getRowValueFromTable(string $table, string $field, int $id): string {
+    public static function getRowValueFromTable(string $table, string $field, int $id): ?string {
         $value = null;
         if (self::tableColumnExists($table, $field)) {
             $query = new SQLSelect();
-            $query->setFrom($table)->setSelect([$field])->setWhere("ID = $id");
+            $query->setFrom(Convert::symbol2sql($table))
+                ->setSelect([Convert::symbol2sql($field)])->setWhere(['"ID"' => $id]);
             $results = $query->execute();
             if ($results) {
                 foreach ($results as $result) {
@@ -200,7 +203,8 @@ abstract class Migration {
         $values = [];
         if (self::tableColumnsExist($table, $fields)) {
             $query = new SQLSelect();
-            $query->setFrom($table)->setSelect($fields)->setWhere("ID = $id");
+            $query->setFrom(Convert::symbol2sql($table))
+                ->setSelect(array_map([Convert::class, 'symbol2sql'], $fields))->setWhere(['"ID"' => $id]);
             $results = $query->execute();
             if ($results) {
                 foreach ($results as $result) {
@@ -238,23 +242,27 @@ abstract class Migration {
             // Ensure the ID we're checking now is the same as the one we're inserting to help prevent issues with duplicate keys.
             $checkID = $id;
             if (isset($values['ID'])) $checkID = $values['ID'];
-            $select = new SQLSelect('COUNT(*)', $table, ['ID' => $checkID]);
+            $select = new SQLSelect('COUNT(*)', Convert::symbol2sql($table), ['"ID"' => $checkID]);
             $result = $select->execute();
             $exists = (bool) (int) $result->value();
         }
 
         // Pull out an ID (if applicable).
         if ($id === null && array_key_exists('ID', $values)) $id = $values['ID'];
+        $assignments = array_combine(
+            array_map(fn(string $field): string => Convert::symbol2sql($field), array_keys($values)),
+            array_values($values)
+        );
 
         if ($exists) {
             // Generate an execute an UPDATE query.
-            $update = new SQLUpdate($table, $values, ['ID' => $id]);
+            $update = new SQLUpdate(Convert::symbol2sql($table), $assignments, ['"ID"' => $id]);
             $update->execute();
             return true;
 
         } elseif($insert) {
             // Generate an INSERT query instead.
-            $insert = new SQLInsert($table, $values);
+            $insert = new SQLInsert(Convert::symbol2sql($table), $assignments);
             $insert->execute();
             return true;
         }
@@ -330,7 +338,7 @@ abstract class Migration {
      * CAUTION: This method is quite abstract, so it could take a very long time to run if you have many objects to
      * transition, especially SiteTree instances.
      *
-     * TODO: An issue with SiteTree objects is unpublished instances will not update the currently published version (if one exists).
+     * Pages with pending draft changes retain their live version, matching ::publish()'s safeguards.
      *
      * @param   DataObject     $dataObject
      * @param   string         $oldFieldName
@@ -340,7 +348,8 @@ abstract class Migration {
      */
     public static function transitionField(DataObject $dataObject, string $oldFieldName, string $newFieldName, ?callable $transformation = null): void {
         // Get and transform data (if applicable).
-        $value = static::getRowValueFromTable(get_class($dataObject), $oldFieldName, $dataObject->ID); // TODO: SSv4: Resolve the table name separately from the class name.
+        $table = static::getTableForField(get_class($dataObject), $oldFieldName);
+        $value = $table === '' ? null : static::getRowValueFromTable($table, $oldFieldName, $dataObject->ID);
         if ($transformation) $value = call_user_func($transformation, $value);
 
         // Set transformed value and save (varies depending on if this is a page or not).
@@ -387,6 +396,9 @@ abstract class Migration {
         }, array_keys($fieldMapping), array_values($fieldMapping));
         $destFields = array_values($fieldMapping);
 
+        $sourceFieldDiff = array_diff($sourceFields, array_keys(self::getTableColumns($fromTable)));
+        if ($sourceFieldDiff) throw new MigrationException("Source fields do not exist in '$fromTable': " . join(', ', $sourceFieldDiff));
+
         // Validate columns in the destination first and ensure they exist first before moving forward, since you
         // don't want to perform a DELETE on an entire table unless you're sure the entire operation will complete.
         $destActualFields = array_keys(self::getTableColumns($toTable));
@@ -395,12 +407,15 @@ abstract class Migration {
 
         // Purge now, if specified.
         if ($purgeDest) {
-            $delete = new SQLDelete($toTable);
+            $delete = new SQLDelete(Convert::symbol2sql($toTable));
             $delete->execute();
         }
 
         // Begin fetching rows and copying them over now.
-        $select = new SQLSelect($sourceFields, $fromTable);
+        $select = new SQLSelect(
+            array_map([Convert::class, 'symbol2sql'], $sourceFields),
+            Convert::symbol2sql($fromTable)
+        );
         if ($where !== null) $select->setWhere($where);
         $result = $select->execute();
         while($sourceRow = $result->next()) { // TODO: SSv5: Move to iterator pattern
@@ -430,8 +445,18 @@ abstract class Migration {
      *
      * @throws  MigrationException
      */
-    public static function copyVersionedTable(string $fromBaseTable, string $toBaseTable, ?array $fieldMapping = null, bool $purgeDest = false, mixed $where = null): void {
+    public static function copyVersionedTable(string $fromBaseTable, string $toBaseTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null): void {
         $suffixes = ['', '_Live', '_Versions'];
+
+        // Since we could potentially clobber data before throwing an exception, make sure ALL source/destination table
+        // pairs exist and fail early rather than after a call to ::copyTable() succeeds (particularly one that purges).
+        foreach ($suffixes as $suffix) {
+            foreach ([$fromBaseTable, $toBaseTable] as $baseTable) {
+                $table = $baseTable . $suffix;
+                if (!self::tableExists($table)) throw new MigrationException("Table '$table' does not exist.");
+            }
+        }
+
         foreach($suffixes as $suffix) {
             self::copyTable($fromBaseTable . $suffix, $toBaseTable . $suffix, $fieldMapping, $purgeDest, $where);
         }

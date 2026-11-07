@@ -134,6 +134,7 @@ Due to the fact that the existing `dev/build` process runs independently from th
   - Removed both `Migration::loginAsAdmin()` and `::whileAdmin()` helper methods. They are no longer required in SS4 for supporting the core `::publish()` and `::unpublish()` methods.
   - Added parameter and return types to migration helpers while retaining PHP 7.4 compatible syntax.
   - Moved library classes to `src/` with PSR-4 autoloading.
+  - Table and column names are now quoted as identifiers via `Convert::symbol2sql()` instead of escaped with `Convert::raw2sql()`. Remove manual identifier quoting passed to methods, such as backticks around column names passed to `addColumnsToTable()`, e.g. ``addColumnsToTable('MyObject', ['`FooBar`' => 'INT'])`` should be cleaned up
 
 
 ## To Do

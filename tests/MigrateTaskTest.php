@@ -5,16 +5,22 @@ namespace PatrickNelson\Migrations\Tests;
 use Exception;
 use PatrickNelson\Migrations\MigrateTask;
 use PatrickNelson\Migrations\Migration;
+use PatrickNelson\Migrations\MigrationException;
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
 
 class MigrateTaskTest extends SapphireTest {
+
+    // Schema-helper tests use DDL, which implicitly commits MySQL transactions.
+    protected $usesTransactions = false;
 
     protected static $fixture_file = 'MigrateTaskTest.yml';
 
@@ -114,19 +120,88 @@ class MigrateTaskTest extends SapphireTest {
 	}
 
 	public function testTransitionField() {
-		// TODO: Make sure values are retained from old -> new.
-
-		// TODO: Make sure values are properly transformed from old -> new
+		$record = Migration_TestChild::create(['SourceField' => 'legacy value']);
+		$record->write();
+		$db = Config::inst()->get(Migration_TestParent::class, 'db');
+		unset($db['SourceField']);
+		Config::modify()->set(Migration_TestParent::class, 'db', $db);
+		DataObject::getSchema()->reset();
+		Migration::transitionField($record, 'SourceField', 'NewField', 'strtoupper');
+		$this->assertSame('LEGACY VALUE', Migration::getRowValueFromTable('Migration_TestParent', 'NewField', $record->ID));
+		$this->assertSame('legacy value', Migration::getRowValueFromTable('Migration_TestParent', 'SourceField', $record->ID));
 	}
 
-	/**
-	 * TODO: SSv4: Expect mapped table names instead of namespaced class names.
-	 */
 	public function testGetTableForField() {
-	    $this->assertEquals(Migration_TestParent::class, Migration::getTableForField(Migration_TestGrandchild::class, 'ParentField'));
-	    $this->assertEquals(Migration_TestChild::class, Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));
-	    $this->assertEquals(Migration_TestGrandchild::class, Migration::getTableForField(Migration_TestGrandchild::class, 'Grandchild'));
+	    $this->assertSame('Migration_TestParent', Migration::getTableForField(Migration_TestGrandchild::class, 'ParentField'));
+	    $this->assertSame('Migration_TestChild', Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));
+	    $this->assertSame('Migration_TestGrandchild', Migration::getTableForField(Migration_TestGrandchild::class, 'Grandchild'));
+	    Config::modify()->set(Migration_TestChild::class, 'db', []);
+	    DataObject::getSchema()->reset();
+	    $this->assertSame('Migration_TestChild', Migration::getTableForField(Migration_TestGrandchild::class, 'ChildField'));
+	    $this->assertSame('', Migration::getTableForField(Migration_TestGrandchild::class, 'MissingField'));
 	}
+
+    public function testDatabaseHelpers(): void {
+        $table = 'Migration_TestParent';
+        $this->assertTrue(Migration::tableExists($table));
+        $this->assertFalse(Migration::tableExists('NoSuchMigrationTable'));
+        $this->assertSame([], Migration::getTableColumns('NoSuchMigrationTable'));
+        $this->assertSame(['order'], Migration::addColumnsToTable($table, ['order' => 'VARCHAR(50) DEFAULT NULL']));
+        $this->assertSame([], Migration::addColumnsToTable($table, ['order' => 'VARCHAR(50)']));
+        $this->assertTrue(Migration::setRowValuesOnTable($table, ['ID' => 123, 'order' => 'inserted'], null, true));
+        $this->assertTrue(Migration::setRowValuesOnTable($table, ['order' => 'updated'], 123));
+        $this->assertSame(['order' => 'updated'], Migration::getRowValuesFromTable($table, ['order'], 123));
+        $this->assertNull(Migration::getRowValueFromTable($table, 'NewField', 123));
+        $this->assertNull(Migration::getRowValueFromTable($table, 'Missing', 123));
+        $this->assertNull(Migration::getRowValueFromTable($table, 'order', 456));
+        $this->assertSame(['order'], Migration::dropColumnsFromTable($table, ['order', 'Missing']));
+    }
+
+    public function testCopyTable(): void {
+        Migration_TestParent::create(['ID' => 123, 'ParentField' => 'copied'])->write();
+        Migration_TestChild::create(['ParentField' => 'untouched', 'ChildField' => 'old'])->write();
+        $source = 'Migration_TestParent';
+        $dest = 'Migration_TestChild';
+        Migration::copyTable($source, $dest, ['ID', 'ParentField' => 'ChildField'], true, ['"ID"' => 123]);
+        $this->assertSame('copied', Migration::getRowValueFromTable($dest, 'ChildField', 123));
+        $this->assertSame(1, (int) DB::query('SELECT COUNT(*) FROM "Migration_TestChild"')->value());
+        try {
+            Migration::copyTable($source, $dest, ['Missing' => 'ChildField'], true);
+            $this->fail('Invalid source fields must be rejected before purging.');
+        } catch (MigrationException $e) {
+            $this->assertStringContainsString('Missing', $e->getMessage());
+        }
+        $this->assertSame('copied', Migration::getRowValueFromTable($dest, 'ChildField', 123));
+    }
+
+    public function testCopyVersionedTable(): void {
+        $schema = DB::get_schema();
+        $schema->schemaUpdate(static function () use ($schema) {
+            foreach (['MigrationCopySource', 'MigrationCopyDest'] as $table) {
+                foreach (['', '_Versions'] as $suffix) $schema->requireTable($table . $suffix, ['Value' => 'Varchar']);
+            }
+        });
+        Migration::setRowValuesOnTable('MigrationCopySource', ['ID' => 1, 'Value' => 'draft'], null, true);
+        Migration::setRowValuesOnTable('MigrationCopySource_Versions', ['ID' => 2, 'Value' => 'history'], null, true);
+        Migration::setRowValuesOnTable('MigrationCopyDest', ['ID' => 1, 'Value' => 'retained'], null, true);
+        try {
+            Migration::copyVersionedTable('MigrationCopySource', 'MigrationCopyDest', null, true);
+            $this->fail('Missing tables must be rejected before purging any table.');
+        } catch (MigrationException $e) {
+            $this->assertStringContainsString('MigrationCopySource_Live', $e->getMessage());
+        }
+        $this->assertSame('retained', Migration::getRowValueFromTable('MigrationCopyDest', 'Value', 1));
+        $schema->schemaUpdate(static function () use ($schema) {
+            foreach (['MigrationCopySource', 'MigrationCopyDest'] as $table) {
+                $schema->requireTable($table . '_Live', ['Value' => 'Varchar']);
+            }
+        });
+        Migration::setRowValuesOnTable('MigrationCopySource_Live', ['ID' => 1, 'Value' => 'live'], null, true);
+        Migration::copyVersionedTable('MigrationCopySource', 'MigrationCopyDest', null, true);
+        $this->assertSame('draft', Migration::getRowValueFromTable('MigrationCopyDest', 'Value', 1));
+        $this->assertSame('live', Migration::getRowValueFromTable('MigrationCopyDest_Live', 'Value', 1));
+        $this->assertSame('history', Migration::getRowValueFromTable('MigrationCopyDest_Versions', 'Value', 2));
+    }
 
 }
 
@@ -160,6 +235,8 @@ class Migration_TestParent extends DataObject implements TestOnly {
 
     private static $db = [
         'ParentField' => 'Varchar(255)',
+        'SourceField' => 'Varchar(255)',
+        'NewField' => 'Varchar(255)',
     ];
     private static $table_name = 'Migration_TestParent';
 }
