@@ -132,7 +132,8 @@ Due to the fact that the existing `dev/build` process runs independently from th
   - Add support for Silverstripe 4
   - Moved to `PatrickNelson\Migrations` namespace
   - Removed both `Migration::loginAsAdmin()` and `::whileAdmin()` helper methods. They are no longer required in SS4 for supporting the core `::publish()` and `::unpublish()` methods.
-  - All methods are now strongly typed (thanks to PHP 7.4 support requirement inherited from `silverstripe/framework`)
+  - Added parameter and return types to migration helpers while retaining PHP 7.4 compatible syntax.
+  - Moved library classes to `src/` with PSR-4 autoloading.
 
 
 ## To Do

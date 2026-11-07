@@ -316,7 +316,7 @@ class MigrateTask extends BuildTask {
      *
      * @return array
      */
-    public static function getAllMigrations() {
+    public static function getAllMigrations(): array {
         // Get all descendants of the abstract "Migration" class but ensure the class "MigrationBoilerplate" is skipped.
         $manifest = ClassLoader::inst()->getManifest();
         $classes = array_diff($manifest->getDescendantsOf(Migration::class), array(MigrationBoilerplate::class));
