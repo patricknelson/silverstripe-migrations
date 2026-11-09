@@ -42,7 +42,23 @@ Make a new migration file for you with boilerplate code.
 sake dev/tasks/MigrateTask make:migration_name
 ```
 
-**Note:** This file will be automatically placed in your project directory in the path `<project>/src/migrations`. You can customize this location by defining a `MIGRATION_PATH` constant which should be the absolute path to the desired directory (either in your `_ss_environment.php` or `_config.php` files). Also, migration files that are automatically generated will be pseudo-namespaced with a `Migration_` prefix to help reduce possible class name collisions.
+### Configuration
+
+To customize generated migrations, add `<project>/_config/migrations.yml`:
+
+```yaml
+---
+Name: project-migrations
+After:
+  - '#patricknelson-migrations'
+---
+PatrickNelson\Migrations\MigrateTask:
+  # Empty selects <project>/src/migrations; relative paths are resolved against BASE_PATH.
+  migration_path: 'app/src/custom/path'
+
+  # Empty selects the global namespace. Class names always retain the Migration_ prefix.
+  migration_namespace: 'App\Migrations'
+```
 
 ### How it Works
 
@@ -135,6 +151,7 @@ Due to the fact that the existing `dev/build` process runs independently from th
   - Added parameter and return types to migration helpers while retaining PHP 7.4 compatible syntax.
   - Moved library classes to `src/` with PSR-4 autoloading.
   - Table and column names are now quoted as identifiers via `Convert::symbol2sql()` instead of escaped with `Convert::raw2sql()`. Remove manual identifier quoting passed to methods, such as backticks around column names passed to `addColumnsToTable()`, e.g. ``addColumnsToTable('MyObject', ['`FooBar`' => 'INT'])`` should be cleaned up
+  - Replaced `MIGRATION_PATH` with YAML configuration for the generation path and optional namespace. New migrations remain global by default and always keep the `Migration_` prefix.
 
 
 ## To Do

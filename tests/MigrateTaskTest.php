@@ -8,6 +8,10 @@ use PatrickNelson\Migrations\Migration;
 use PatrickNelson\Migrations\MigrationException;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Manifest\ClassLoader;
+use SilverStripe\Core\Manifest\ClassManifest;
+use SilverStripe\Core\Manifest\ModuleLoader;
+use SilverStripe\Core\Manifest\ModuleManifest;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Dev\TestOnly;
 use SilverStripe\ORM\DataObject;
@@ -21,6 +25,11 @@ class MigrateTaskTest extends SapphireTest {
 
     // Schema-helper tests use DDL, which implicitly commits MySQL transactions.
     protected $usesTransactions = false;
+
+    /**
+     * @var string
+     */
+    private $migrationDirectory;
 
     protected static $fixture_file = 'MigrateTaskTest.yml';
 
@@ -42,7 +51,17 @@ class MigrateTaskTest extends SapphireTest {
 		// Initialize task instance, ensure it's quiet.
 		$this->task = new MigrateTask();
 		$this->task->setSilent(true);
+		$this->migrationDirectory = tempnam(sys_get_temp_dir(), 'migrations-');
+		unlink($this->migrationDirectory);
+		mkdir($this->migrationDirectory);
+		Config::modify()->set(MigrateTask::class, 'migration_path', $this->migrationDirectory);
 	}
+
+    protected function tearDown(): void {
+        foreach (glob($this->migrationDirectory . '/*') as $file) unlink($file);
+        rmdir($this->migrationDirectory);
+        parent::tearDown();
+    }
 
 	public function testEnsureWorking() {
 		// Just a generic test to make sure unit testing is working.
@@ -82,7 +101,7 @@ class MigrateTaskTest extends SapphireTest {
 				Versioned::get_by_stage(Migration_TestPage::class, Versioned::LIVE)->byID($page->ID)->Title ?? null,
 			];
 		};
-        
+
         // Prove access and lack thereof
 		$this->logInWithPermission('ADMIN');
 		$this->assertTrue($page->canPublish());
@@ -201,6 +220,124 @@ class MigrateTaskTest extends SapphireTest {
         $this->assertSame('draft', Migration::getRowValueFromTable('MigrationCopyDest', 'Value', 1));
         $this->assertSame('live', Migration::getRowValueFromTable('MigrationCopyDest_Live', 'Value', 1));
         $this->assertSame('history', Migration::getRowValueFromTable('MigrationCopyDest_Versions', 'Value', 2));
+    }
+
+    public function testConfiguredAndAutomaticPaths(): void {
+        Config::modify()->set(ModuleManifest::class, 'project', null);
+        $this->assertSame($this->migrationDirectory, MigrateTask::getMigrationPath());
+        Config::modify()->set(MigrateTask::class, 'migration_path', 'custom/migrations');
+        $this->assertSame(BASE_PATH . '/custom/migrations', MigrateTask::getMigrationPath());
+        Config::modify()->set(MigrateTask::class, 'migration_path', '');
+        Config::modify()->set(ModuleManifest::class, 'project', 'patricknelson/silverstripe-migrations');
+        $this->assertSame(dirname(__DIR__) . '/src/migrations', MigrateTask::getMigrationPath());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingProject(): void {
+        Config::modify()->set(MigrateTask::class, 'migration_path', '');
+        Config::modify()->set(ModuleManifest::class, 'project', null);
+        $this->expectException(MigrationException::class);
+        $this->expectExceptionMessage('No project module is configured.');
+        MigrateTask::getMigrationPath();
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnresolvableProject(): void {
+        Config::modify()->set(MigrateTask::class, 'migration_path', '');
+        Config::modify()->set(ModuleManifest::class, 'project', 'missing-project');
+        $manifest = $this->getMockBuilder(ModuleManifest::class)->disableOriginalConstructor()->onlyMethods(['getModule'])->getMock();
+        $manifest->method('getModule')->with('missing-project')->willReturn(null);
+        ModuleLoader::inst()->pushManifest($manifest);
+        try {
+            $this->expectException(MigrationException::class);
+            $this->expectExceptionMessage('Cannot resolve the project module.');
+            MigrateTask::getMigrationPath();
+        } finally {
+            ModuleLoader::inst()->popManifest();
+        }
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function generationNamespaces(): array {
+        return [
+            'global' => ['', 'global_example', 'Migration_GlobalExample'],
+            'namespaced' => ['Example\\Migrations', 'namespaced_example', 'Example\\Migrations\\Migration_NamespacedExample'],
+            'trimmed' => ['\\Example\\Migrations\\', 'trimmed_example', 'Example\\Migrations\\Migration_TrimmedExample'],
+        ];
+    }
+
+    /**
+     * @dataProvider generationNamespaces
+     * @param string $namespace
+     * @param string $baseName
+     * @param string $className
+     */
+    public function testGenerateMigration(string $namespace, string $baseName, string $className): void {
+        Config::modify()->set(MigrateTask::class, 'migration_namespace', $namespace);
+        $this->task->make($baseName);
+        $files = glob($this->migrationDirectory . '/*.php');
+        $this->assertCount(1, $files);
+        require $files[0];
+        $class = new \ReflectionClass($className);
+        $this->assertSame(trim($namespace, '\\'), $class->getNamespaceName());
+        $this->assertStringStartsWith('Migration_', $class->getShortName());
+        $this->assertSame(Migration::class, $class->getParentClass()->getName());
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_' . $baseName . '\.php$/', basename($files[0]));
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function invalidConfiguration(): array {
+        return ['path type' => ['migration_path', []], 'namespace type' => ['migration_namespace', []], 'namespace syntax' => ['migration_namespace', 'Example; die()'], 'empty namespace segment' => ['migration_namespace', 'Example\\\\Invalid']];
+    }
+
+    /**
+     * @dataProvider invalidConfiguration
+     * @param string $setting
+     * @param mixed $value
+     */
+    public function testInvalidConfiguration(string $setting, $value): void {
+        Config::modify()->set(MigrateTask::class, $setting, $value);
+        $this->expectException(MigrationException::class);
+        $this->task->make('invalid_configuration');
+    }
+
+    public function testMissingOutputDirectory(): void {
+        Config::modify()->set(MigrateTask::class, 'migration_path', $this->migrationDirectory . '/missing');
+        $this->expectException(MigrationException::class);
+        $this->task->make('missing_directory');
+    }
+
+    public function testDiscoveryAcrossNamespaces(): void {
+        require_once __DIR__ . '/fixtures/migrations/2020_01_01_000000_global.php';
+        require_once __DIR__ . '/fixtures/migrations/2020_01_02_000000_namespaced.php';
+        $classes = [Fixtures\Migration_Namespaced::class, 'Migration_Global'];
+        $this->assertSame([
+            '2020_01_01_000000_global' => 'Migration_Global',
+            '2020_01_02_000000_namespaced' => Fixtures\Migration_Namespaced::class,
+        ], $this->discover($classes));
+    }
+
+    /**
+     * @param string[] $classes Controlled descendants without changing the real class manifest.
+     * @return array
+     */
+    private function discover(array $classes): array {
+        $manifest = $this->getMockBuilder(ClassManifest::class)->disableOriginalConstructor()->onlyMethods(['getDescendantsOf'])->getMock();
+        $manifest->method('getDescendantsOf')->with(Migration::class)->willReturn($classes);
+        ClassLoader::inst()->pushManifest($manifest);
+        try {
+            return MigrateTask::getAllMigrations();
+        } finally {
+            ClassLoader::inst()->popManifest();
+        }
     }
 
 }

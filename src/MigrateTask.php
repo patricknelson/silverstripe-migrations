@@ -6,6 +6,8 @@ use ReflectionClass;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Manifest\ClassLoader;
+use SilverStripe\Core\Manifest\ModuleLoader;
+use SilverStripe\Core\Manifest\ModuleManifest;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
 use Throwable;
@@ -30,9 +32,8 @@ use Throwable;
  *        YYYY_MM_DD_HHMMSS_change_serialize_to_json.php
  *
  * IMPORTANT: This file will be automatically placed in your project directory in the path "<project>/src/migrations".
- * This can be overridden by defining an absolute path in the constant "MIGRATION_PATH" in your _ss_environment.php file.
- * Migration files that are automatically generated will be pseudo-namespaced with a "Migration_" prefix to help reduce
- * possible class name collisions.
+ * Configure migration_path and migration_namespace through YAML to override placement and opt into a namespace.
+ * Generated migrations default to the global namespace and always retain their "Migration_" class prefix.
  *
  * @author   Patrick Nelson, pat@catchyour.com
  * @since    2015-02-17
@@ -57,6 +58,22 @@ class MigrateTask extends BuildTask {
     private static $segment = 'MigrateTask';
 
     /**
+     * Absolute path or path relative to BASE_PATH; empty selects the project default.
+     *
+     * @config
+     * @var string
+     */
+    private static $migration_path = '';
+
+    /**
+     * Empty for the global namespace.
+     *
+     * @config
+     * @var string
+     */
+    private static $migration_namespace = '';
+
+    /**
      * @param     HTTPRequest $request
      * @throws    MigrationException
      */
@@ -71,7 +88,7 @@ class MigrateTask extends BuildTask {
         $getVars = $request->getVars();
         $args = array();
         if (isset($getVars['args']) && is_array($getVars['args'])) {
-            foreach ($getVars['args'] as $arg) {
+            foreach($getVars['args'] as $arg) {
                 // Separate keys/values.
                 $argVals = explode(':', $arg, 2);
                 $key = $argVals[0];
@@ -163,7 +180,7 @@ class MigrateTask extends BuildTask {
 
         // Go through queue now with an updated batch number.
         $batch = static::getLatestBatch() + 1;
-        foreach ($queue as $baseName => $className) {
+        foreach($queue as $baseName => $className) {
             // Keep track of last one to execute (for error reporting purposes).
             $this->lastMigrationFile = $baseName;
 
@@ -200,7 +217,7 @@ class MigrateTask extends BuildTask {
         krsort($lastMigrations);
 
         // Go through each of the most recent migrations and run their ->down() method.
-        foreach ($lastMigrations as $baseName => $className) {
+        foreach($lastMigrations as $baseName => $className) {
             /* @var $instance Migration */
             $instance = new $className();
             if (!$instance->isObsolete()) {
@@ -247,16 +264,40 @@ class MigrateTask extends BuildTask {
         // underscores, replacing with spaces and using "ucwords()" to capitalize what we need and then removing those spaces.
         $camelCase = 'Migration_' . str_replace(' ', '', ucwords(strtolower(trim(str_replace('_', ' ', $baseName)))));
 
+        // Get and validate configured namespace (if any)
+        $namespace = static::config()->get('migration_namespace') ?? '';
+        if (!is_string($namespace)) throw new MigrationException('migration_namespace must be a string.');
+        $namespace = trim($namespace, '\\');
+        if ($namespace !== '') {
+            // Check that it both looks valid and doesn't contain invalid keywords. Both are necessary because the first
+            // check wouldn't catch reserved keywords, but the second check would allow "Foo; echo 1" as a namespace.
+
+            // Step 1: Make sure it looks valid
+            foreach(explode('\\', $namespace) as $segment) {
+                if (!preg_match('/^[a-z_\x80-\xff][a-z0-9_\x80-\xff]*$/iD', $segment)) {
+                    throw new MigrationException('Invalid migration_namespace: ' . $namespace);
+                }
+            }
+
+            // Step 2: No special keywords
+            try {
+                if ($namespace !== '') token_get_all('<?php namespace ' . $namespace . ';', TOKEN_PARSE);
+            } catch (Throwable $e) {
+                throw new MigrationException('Invalid migration_namespace: ' . $namespace, 0, $e);
+            }
+        }
+        $className = trim($namespace . '\\' . $camelCase, '\\');
+
         // Do a quick check to make sure this class doesn't already exist...
-        if (class_exists($camelCase)) {
-            throw new MigrationException("Cannot automatically generate a migration class called '$camelCase' (derived from '$baseName'), since that class already appears to exist.");
+        if (class_exists($className)) {
+            throw new MigrationException("Cannot automatically generate a migration class called '$className' (derived from '$baseName'), since that class already appears to exist.");
         }
 
         // Get boilerplate file contents, find/replace some contents and write to file path.
         $reflect = new ReflectionClass(MigrationBoilerplate::class);
         $sourceData = str_replace(
             [$reflect->getShortName(), 'namespace ' . $reflect->getNamespaceName()],
-            [$camelCase, 'use ' . Migration::class],
+            [$camelCase, ($namespace === '' ? '' : 'namespace ' . $namespace . ";\n\n") . 'use ' . Migration::class],
             file_get_contents($reflect->getFileName())
         );
         file_put_contents($filePath, $sourceData);
@@ -293,22 +334,25 @@ class MigrateTask extends BuildTask {
      * @return    string
      * @throws    MigrationException
      */
-    public static function getMigrationPath() {
-        // TODO: SSv4: Move to YAML configuration instead.
+    public static function getMigrationPath(): string {
+        // TODO: Transitional. Remove this error in the next major version.
         if (defined('MIGRATION_PATH')) {
-            // Migration path defined by constant.
-            $migrationPath = MIGRATION_PATH;
-
-        } else {
-            // Attempt to infer this path automatically based on the project name.
-            $project = project();
-            if (empty($project)) throw new MigrationException("Please either define a global '\$project' variable or define a MIGRATION_PATH constant in order to setup a path for migration files to live.");
-
-            // Build path. TODO: SSv4: Double check that project() above and the "src" here are the best approach. Check for alternatives.
-            $migrationPath = join(DIRECTORY_SEPARATOR, array(BASE_PATH, $project, 'src', 'migrations'));
+            throw new MigrationException('MIGRATION_PATH is no longer supported. Configure MigrateTask.migration_path in YAML instead.');
         }
 
-        return $migrationPath;
+        // Use configured migration path
+        $path = static::config()->get('migration_path');
+        if (!is_string($path)) throw new MigrationException('migration_path must be a string.');
+        if ($path !== '') {
+            return Director::is_absolute($path) ? $path : BASE_PATH . DIRECTORY_SEPARATOR . $path;
+        }
+
+        // Automatically infer based on project location
+        $project = ModuleManifest::config()->get('project');
+        if (!$project) throw new MigrationException('No project module is configured. Configure ModuleManifest.project or MigrateTask.migration_path in YAML.');
+        $module = ModuleLoader::getModule($project);
+        if (!$module) throw new MigrationException('Cannot resolve the project module. Configure MigrateTask.migration_path in YAML.');
+        return $module->getPath() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'migrations';
     }
 
     /**
@@ -321,7 +365,7 @@ class MigrateTask extends BuildTask {
         $manifest = ClassLoader::inst()->getManifest();
         $classes = array_diff($manifest->getDescendantsOf(Migration::class), array(MigrationBoilerplate::class));
         $classesOrdered = array();
-        foreach ($classes as $className) {
+        foreach($classes as $className) {
             // Get actual filename of migration class and use that as the key.
             $reflect = new ReflectionClass($className);
             $filename = basename($reflect->getFileName(), '.php');
@@ -343,7 +387,7 @@ class MigrateTask extends BuildTask {
 
         // Return an array of migrations as the base name (filename) as the key and associated migration class as the value.
         $migrations = array();
-        foreach ($query->toArray() as $migration) {
+        foreach($query->toArray() as $migration) {
             $migrations[$migration->BaseName] = $migration->MigrationClass;
         }
         return $migrations;

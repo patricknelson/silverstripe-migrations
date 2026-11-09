@@ -1,0 +1,9 @@
+---
+Name: patricknelson-migrations
+---
+PatrickNelson\Migrations\MigrateTask:
+  # Empty selects <project>/src/migrations; relative paths are resolved against BASE_PATH.
+  migration_path: ''
+
+  # Empty selects the global namespace. Class names always retain the Migration_ prefix.
+  migration_namespace: ''
