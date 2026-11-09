@@ -64,13 +64,12 @@ PatrickNelson\Migrations\MigrateTask:
 
 **Up**
 
-<!-- TODO: SSv4: Rewrite -->
-
-Each time you run an `up` migration, this task will look through all migration files that have been setup in your `<project>/code/migrations` folder (which you can customize) and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration file and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.
+Each time you run an `up` migration, this task will look through all migration files that have been setup in your configured migrations folder and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration class and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.
 
 **Down**
 
-When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, they are done in reverse order one batch at a time to help ensure consistency.
+When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, the corresponding `->down()` methods are executed in reverse order, one batch at a time to help ensure consistency.
+
 
 ### Writing Migrations
 
@@ -80,12 +79,17 @@ You can easily generate migration files by running the task with the `make:migra
 
 `sake dev/tasks/MigrateTask make:change_serialize_to_json`
 
-This will generate a file following the format `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `Migration_ChangeSerializeToJson`. It should look like this:
+This will generate a file following the format `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `App\Migrations\Migration_ChangeSerializeToJson` with the configuration above.
 
-<!-- TODO: SSv4: Revisit and rewrite once dust settles -->
+Once modified, your migration would look like this:
 
 ```php
 <?php
+
+namespace App\Migrations;
+
+use App\MyDataObject;
+use PatrickNelson\Migrations\Migration;
 
 class Migration_ChangeSerializeToJson extends Migration {
 
@@ -98,6 +102,7 @@ class Migration_ChangeSerializeToJson extends Migration {
 		// Go through each DataObject and convert the column format from serialized to JSON.
 		foreach(MyDataObject::get() as $instance) {
 			$instance->EncodedField = json_encode(unserialize($instance->EncodedField));
+			$instance->write();
 		}
 	}
 
@@ -110,6 +115,7 @@ class Migration_ChangeSerializeToJson extends Migration {
 		// Go through each DataObject and convert the column format back from JSON to serialized again.
 		foreach(MyDataObject::get() as $instance) {
 			$instance->EncodedField = serialize(json_decode($instance->EncodedField));
+			$instance->write();
 		}
 	}
 }
@@ -118,11 +124,27 @@ class Migration_ChangeSerializeToJson extends Migration {
 
 A collection of helper methods are also available on the `Migration` class that perform common database interactions, such as dropping columns from a table or retrieving a value from a column that is no longer available through the ORM but still exists in the database table.
 
+### Obsolete migrations
+
+You can flag old migrations that should no longer be run (but maybe kept in code for reference) as obsolete by simply adding `protected $obsolete = true` to your class, e.g.
+
+
+```php
+class Migration_OutdatedMigration extends Migration {
+
+    protected $obsolete = true;
+
+    // ...
+}
+```
+
+Alternatively, you can create a subdirectory such as `migrations/obsolete/` and add the special `_manifest_exclude` file (see [Silverstripe documentation](https://docs.silverstripe.org/en/developer_guides/execution_pipeline/manifests/#php-class-manifest)) and relocate obsolete migrations there. This will prevent `MigrateTask` from seeing the migrations and attempting to run them.
+
 ### Helper Methods
 
 Documentation for helper methods can be found [here](doc/HelperMethods.md).
 
-### Running Your Migrations
+### Tip: Running New Migrations
 
 It's important that before you ever migrate `up` or `down` that you make sure you run the `dev/build` task **first**. For example, you could do the following:
 
@@ -133,22 +155,18 @@ sake dev/tasks/MigrateTask up
 
 This will ensure that both the migration classes are available (in the class map) and that the new fields you've declared in your `DataObject`'s are accessible to your migration.
 
-
-## Known Issues
-
-<!-- TODO: SSv4: Rewrite; not very clear -->
-
-Due to the fact that the existing `dev/build` process runs independently from these migrations (instead of being based already on migrations), it is possible that you might end up running migrations that are no longer applicable to the given declared state in your current DataObject `::$db` static definitions. To help avoid issues in more complex websites, you can either perform checks within the migrations themselves or setup new migrations to coexist with code that is bundled into release branches and deploy them discretely (e.g. `release-1.2.0` or `hotfix-1.2.1`). The primary goal is to ensure that data/content in existing environments can be retained and changed selectively without losing a column, a table or replacing an entire table or database each time your schema has to change.
+<!-- TODO: Add another helpful tip later about removing old/outdated schema in a way that is safe, e.g. break it up into multiple deploys -->
 
 
 ## Change Log
 
 - v0.x
-- v1:
+- v1: details at https://github.com/patricknelson/silverstripe-migrations/pull/24
   - Add support for Silverstripe 4
+  - Added compatibility for PHP 7.4 to PHP 8.5
   - Moved to `PatrickNelson\Migrations` namespace
-  - Removed both `Migration::loginAsAdmin()` and `::whileAdmin()` helper methods. They are no longer required in SS4 for supporting the core `::publish()` and `::unpublish()` methods.
-  - Added parameter and return types to migration helpers while retaining PHP 7.4 compatible syntax.
+  - Removed support for `Migration::loginAsAdmin()` and `::whileAdmin()` helper methods. They are no longer required in SS4 for supporting the core `::publish()` and `::unpublish()` methods.
+  - Added strict parameter and return types to all migration helpers
   - Moved library classes to `src/` with PSR-4 autoloading.
   - Table and column names are now quoted as identifiers via `Convert::symbol2sql()` instead of escaped with `Convert::raw2sql()`. Remove manual identifier quoting passed to methods, such as backticks around column names passed to `addColumnsToTable()`, e.g. ``addColumnsToTable('MyObject', ['`FooBar`' => 'INT'])`` should be cleaned up
   - Replaced `MIGRATION_PATH` with YAML configuration for the generation path and optional namespace. New migrations remain global by default and always keep the `Migration_` prefix.
@@ -156,8 +174,7 @@ Due to the fact that the existing `dev/build` process runs independently from th
 
 ## To Do
 
-<!-- TODO: SSv4: Probably best to just remove these and/or migrate to issues for better visibility (plus this is clutter) -->
+<!-- TODO: Probably best to just remove these and/or migrate to issues for better visibility (plus this is clutter) -->
 
 - Add ability to "prune" database fields and tables, which not only removes defunct fields/tables which are no longer used, but also re-orders them. Would be a highly destructive feature but potentially very helpful if used regularly (and responsibly).
-- Method to obtain a hash as a signature for the current schema being defined by `DataObject` child classes. Will be helpful in creating migrations that should only be run if the current schema/state matches a certain hash.
 - Setup a `--pretend` option to allow the ability to preview all queries that will be executed by migrations (both up and down).

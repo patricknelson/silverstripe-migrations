@@ -2,17 +2,21 @@
 
 ## Helper Methods
 
-#### `publish(SiteTree $page)`
+#### `publish(SiteTree $page, bool $force = false)`
 
-Allows you to publish a page. Useful since SilverStripe requires permissions to publish a page. However...
-
-**WARNING:** Because SilverStripe requires permissions to publish or un-publish a page, the system will temporarily log in as the default administrator in order to run the current batch of migrations if you use this feature. This is only temporary and will go away after the migration has completed. Note also that, from a security standpoint, migrations are setup to only allow access from the command line, so presumably any attacker who could execute migrations could also feasibly read the default admin's username/password from `_ss_environment.php` (if set).
+Saves a page and recursively publishes it if there are no pending draft changes, or when `$force = true`.
 
 #### `unpublish(SiteTree $page)`
 
-Allows you to un-publish a page.
+Unpublishes a page while retaining its draft.
 
-**WARNING:** See warning for `::publish()` above.
+#### `setPageType(SiteTree $page, string $pageType)`
+
+Changes a page's type and publishes it, including pending draft changes.
+
+```php
+static::setPageType($page, \MyCustomPage::class);
+```
 
 
 #### `(boolean) tableExists(string $table)`
@@ -31,7 +35,7 @@ Returns true if a single column exists on a database table.
 if (static::tableColumnExists('MyDataObject', 'FieldName')) { /*.*/ }
 ```
 
-#### `(boolean) tableColumnsExist(string $table, array $column)`
+#### `(boolean) tableColumnsExist(string $table, array $columns)`
 
 Returns true if an array of columns exist on a database table.
 
@@ -41,7 +45,7 @@ if (static::tableColumnsExist('MyDataObject', ['FieldName', 'OtherField'])) { /*
 
 #### `(array) getTableColumns(string $table)`
 
-Returns an array of columns (and their properties) that exist on a database table.
+Returns an array of columns (and their properties) that exist on a database table, or an empty array if the table does not exist.
 
 ```php
 $columns = static::getTableColumns('MyDataObject');
@@ -57,7 +61,15 @@ array {
 }
 ```
 
-#### `(boolean) dropColumnsFromTable(string $table, array $columns)`
+#### `(string) getTableForField(string $className, string $field)`
+
+Returns the table containing a field in the class hierarchy, or an empty string if not found. Works for fields removed from `$db`.
+
+```php
+$table = static::getTableForField(\MyDataObject::class, 'OldField');
+```
+
+#### `(array) dropColumnsFromTable(string $table, array $columns)`
 
 Drops columns from a database table. Returns array of columns that were dropped.
 
@@ -65,7 +77,7 @@ Drops columns from a database table. Returns array of columns that were dropped.
 static::dropColumnsFromTable('MyDataObject', ['FieldName', 'OtherField']);
 ```
 
-#### `(boolean) addColumnsToTable(string $table, array $columns)`
+#### `(array) addColumnsToTable(string $table, array $columns)`
 
 Adds columns with the specified properties to a database table, if they don't already exist. Returns array of columns that were added.
 
@@ -76,7 +88,7 @@ static::addColumnsToTable('MyDataObject', [
 ]);
 ```
 
-#### `(string) getRowValueFromTable(string $table, string $field, int $id)`
+#### `(string|null) getRowValueFromTable(string $table, string $field, int $id)`
 
 Gets the value for a single column in a row from the database by the ID column. Useful when a field has been removed from the class' `$db` property, and therefore is no longer accessible through the ORM. Returns `null` if the table, column or row does not exist.
 
@@ -103,9 +115,9 @@ array {
 }
 ```
 
-#### `(boolean) setRowValuesOnTable(string $table, array $values, int $id = null, $insert = false)`
+#### `(boolean) setRowValuesOnTable(string $table, array $values, ?int $id = null, bool $insert = false)`
 
-Sets the raw values for multiple columns on a database table by the ID column. Useful when fields have been removed from the class' `$db` property, and therefore are no longer accessible through the ORM. Returns false if the table or any of the rows do not exist. Returns true if the SQL query was executed successfully.
+Sets raw column values by ID. Returns `false` if the table or columns do not exist, otherwise `true` after executing the query. Set `$insert = true` to insert a missing row; include `ID` in `$values` to specify its ID.
 
 ```php
 static::setRowValuesOnTable('MyDataObject', [
@@ -114,8 +126,18 @@ static::setRowValuesOnTable('MyDataObject', [
 ], $id = 15, $insert = true);
 ```
 
+#### `transitionField(DataObject $dataObject, string $oldFieldName, string $newFieldName, ?callable $transformation = null)`
 
-#### `copyTable($fromTable, $toTable, array $fieldMapping = null, $purgeDest = false, $where = null)`
+Copies an old field's value to a new field, optionally transforming it, then saves the object. Works for fields removed from `$db`; pages use `publish()`.
+
+```php
+static::transitionField($record, 'OldField', 'NewField', static function ($value) {
+	return strtoupper($value ?? '');
+});
+```
+
+
+#### `copyTable(string $fromTable, string $toTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null)`
 
 Copies all values from one table to another. Useful when renaming a `DataObject` or renaming a table since this will allow you to carry over old values and translate between old and new column names (if needed). Will override any existing values with matching ID's. Also have the ability to clear out the destination table completely via `$purgeDest`. To prevent copying the entire table, provide a value for `$where` which will be passed directly to the `->setWhere()` method on `SQLSelect`.
 
@@ -130,4 +152,12 @@ static::copyTable($fromTable, $toTable, [
 	'AnotherField',
 	'Sort',
 ], true);
+```
+
+#### `copyVersionedTable(string $fromBaseTable, string $toBaseTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null)`
+
+Copies the base, `_Live` and `_Versions` tables using `copyTable()`. All source and destination tables must exist.
+
+```php
+static::copyVersionedTable('SourceTable', 'DestinationTable');
 ```
