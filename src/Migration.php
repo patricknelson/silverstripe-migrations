@@ -371,7 +371,7 @@ abstract class Migration {
      *                                      pairs to map between old/new names (instead of just values). Note: Leave
      *                                      empty (or pass null) to automatically assume ALL fields from source table (including ID).
      * @param   bool        $purgeDest      Ensures all data in the DESTINATION table matches the source.
-     * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect.
+     * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect. TODO: SSv5: Add mixed type hint (8.x only)
      * @throws  MigrationException
      */
     public static function copyTable(string $fromTable, string $toTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null): void {
@@ -441,7 +441,7 @@ abstract class Migration {
      * @param   string      $toBaseTable    The name of DESTINATION base table name to copy field data to.
      * @param   array|null  $fieldMapping
      * @param   bool        $purgeDest
-     * @param   mixed|null  $where
+     * @param   mixed|null  $where          TODO: SSv5: Add mixed type hint (8.x only)
      *
      * @throws  MigrationException
      */
