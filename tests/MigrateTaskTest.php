@@ -3,10 +3,12 @@
 namespace PatrickNelson\Migrations\Tests;
 
 use Exception;
+use PatrickNelson\Migrations\DatabaseMigrations;
 use PatrickNelson\Migrations\MigrateTask;
 use PatrickNelson\Migrations\Migration;
 use PatrickNelson\Migrations\MigrationException;
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Manifest\ClassLoader;
 use SilverStripe\Core\Manifest\ClassManifest;
@@ -76,15 +78,69 @@ class MigrateTaskTest extends SapphireTest {
 		$this->assertEquals(1, MigrateTask::getLatestBatch());
 	}
 
-	/*public function testTransactionRollback() {
-		// TODO: Ensure changes are rolled back in case there is an exception.
-	}*/
+	/**
+	 * Roll back migration data and history for exceptions and PHP errors.
+     *
+	 * @return void
+	 */
+	public function testTransactionRollback(): void {
+		$records = Migration_TestParent::get()->count();
+		$history = DatabaseMigrations::get()->count();
+		$failureTypes = [
+		    new Exception('Rollback test'), // Exception
+		    new \TypeError('Rollback test') // Error
+        ];
+		foreach($failureTypes as $failure) {
+			$task = $this->getMockBuilder(MigrateTask::class)->onlyMethods(['up', 'output'])->getMock();
+			$task->expects($this->once())->method('up')->willReturnCallback(function () use ($records, $history, $failure) {
+				Migration_TestParent::create(['ParentField' => 'Rollback test'])->write();
+				DatabaseMigrations::create([
+					'BaseName' => 'rollback_test',
+					'MigrationClass' => Migration_UnitTestOnly::class,
+				])->write();
 
-	/*public function testChangePageType() {
-		// TODO: Ensure that page type can be changed properly and is set in both draft/published versions.
+                // Ensure it has actually incremented *within* the transaction before throwing.
+                $this->assertSame($records + 1, Migration_TestParent::get()->count());
+                $this->assertSame($history + 1, DatabaseMigrations::get()->count());
 
-		// TODO: Ensure that only "Page" instances are allowed as PageType's.
-	}*/
+                throw $failure;
+			});
+
+			// Shutdown reports the error after rollback; interrupt reporting before it exits PHPUnit.
+			$task->expects($this->once())->method('output')->willReturnCallback(function ($text) use ($failure) {
+				$this->assertStringContainsString($failure->getMessage(), $text);
+				throw $failure;
+			});
+			try {
+				$task->run(new HTTPRequest('GET', '/', ['args' => ['up']]));
+				$this->fail('A failed migration must stop execution.');
+			} catch (\Throwable $e) {
+				$this->assertSame($failure, $e);
+			}
+
+			// Prove that rollback has reverted to original count.
+			$this->assertSame($records, Migration_TestParent::get()->count());
+			$this->assertSame($history, DatabaseMigrations::get()->count());
+		}
+	}
+
+	/**
+	 * Change the type on both stages and reject classes outside SiteTree.
+	 *
+	 * @return void
+	 */
+	public function testChangePageType(): void {
+		Versioned::set_stage(Versioned::DRAFT);
+		$page = Migration_TestPage::create(['Title' => 'Change page type']);
+		Migration::publish($page, true);
+		Migration::setPageType($page, SiteTree::class);
+		foreach([Versioned::DRAFT, Versioned::LIVE] as $stage) {
+			$this->assertSame(SiteTree::class, Versioned::get_by_stage(SiteTree::class, $stage)->byID($page->ID)->ClassName);
+		}
+		$this->expectException(MigrationException::class);
+		$this->expectExceptionMessage('must be an instance (or child) of');
+		Migration::setPageType($page, Migration_TestParent::class);
+	}
 
 	/**
      * Verify publish/unpublish while also ensuring we're not tripped up by permission issues (previously a problem in SS3)
