@@ -76,15 +76,15 @@ class MigrateTaskTest extends SapphireTest {
 		$this->assertEquals(1, MigrateTask::getLatestBatch());
 	}
 
-	public function testTransactionRollback() {
+	/*public function testTransactionRollback() {
 		// TODO: Ensure changes are rolled back in case there is an exception.
-	}
+	}*/
 
-	public function testChangePageType() {
+	/*public function testChangePageType() {
 		// TODO: Ensure that page type can be changed properly and is set in both draft/published versions.
 
 		// TODO: Ensure that only "Page" instances are allowed as PageType's.
-	}
+	}*/
 
 	/**
      * Verify publish/unpublish while also ensuring we're not tripped up by permission issues (previously a problem in SS3)
