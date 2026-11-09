@@ -1,6 +1,6 @@
 {
     "name": "patricknelson/silverstripe-migrations",
-    "description": "Atomic database migrations in Silverstripe CMS",
+    "description": "Atomic database migrations for Silverstripe CMS.",
     "type": "silverstripe-vendormodule",
     "homepage": "https://github.com/patricknelson/silverstripe-migrations",
     "keywords": [

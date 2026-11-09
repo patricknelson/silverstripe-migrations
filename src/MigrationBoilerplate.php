@@ -2,9 +2,6 @@
 
 namespace PatrickNelson\Migrations;
 
-/**
- * Reversible migration applied in filename order.
- */
 class MigrationBoilerplate extends Migration {
 
     /**
