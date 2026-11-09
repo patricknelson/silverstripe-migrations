@@ -58,7 +58,7 @@ class MigrateTaskTest extends SapphireTest {
 	}
 
     protected function tearDown(): void {
-        foreach (glob($this->migrationDirectory . '/*') as $file) unlink($file);
+        foreach(glob($this->migrationDirectory . '/*') as $file) unlink($file);
         rmdir($this->migrationDirectory);
         parent::tearDown();
     }
@@ -196,8 +196,8 @@ class MigrateTaskTest extends SapphireTest {
     public function testCopyVersionedTable(): void {
         $schema = DB::get_schema();
         $schema->schemaUpdate(static function () use ($schema) {
-            foreach (['MigrationCopySource', 'MigrationCopyDest'] as $table) {
-                foreach (['', '_Versions'] as $suffix) $schema->requireTable($table . $suffix, ['Value' => 'Varchar']);
+            foreach(['MigrationCopySource', 'MigrationCopyDest'] as $table) {
+                foreach(['', '_Versions'] as $suffix) $schema->requireTable($table . $suffix, ['Value' => 'Varchar']);
             }
         });
         Migration::setRowValuesOnTable('MigrationCopySource', ['ID' => 1, 'Value' => 'draft'], null, true);
@@ -211,7 +211,7 @@ class MigrateTaskTest extends SapphireTest {
         }
         $this->assertSame('retained', Migration::getRowValueFromTable('MigrationCopyDest', 'Value', 1));
         $schema->schemaUpdate(static function () use ($schema) {
-            foreach (['MigrationCopySource', 'MigrationCopyDest'] as $table) {
+            foreach(['MigrationCopySource', 'MigrationCopyDest'] as $table) {
                 $schema->requireTable($table . '_Live', ['Value' => 'Varchar']);
             }
         });

@@ -128,7 +128,7 @@ abstract class Migration {
         $columnsInTable = array_intersect($columns, array_keys(self::getTableColumns($table)));
         if (!$columnsInTable) return $droppedColumns;
         $tableSql = Convert::symbol2sql($table);
-        foreach ($columnsInTable as $column) {
+        foreach($columnsInTable as $column) {
             DB::query("ALTER TABLE $tableSql DROP COLUMN " . Convert::symbol2sql($column));
             $droppedColumns[] = $column;
         }
@@ -148,7 +148,7 @@ abstract class Migration {
         $existingColumns = self::getTableColumns($table);
         if (!$existingColumns) return $addedColumns;
         $tableSql = Convert::symbol2sql($table);
-        foreach ($columns as $column => $properties) {
+        foreach($columns as $column => $properties) {
             if (!array_key_exists($column, $existingColumns)) {
                 DB::query(
                     "ALTER TABLE $tableSql ADD " . Convert::symbol2sql($column)
@@ -179,7 +179,7 @@ abstract class Migration {
                 ->setSelect([Convert::symbol2sql($field)])->setWhere(['"ID"' => $id]);
             $results = $query->execute();
             if ($results) {
-                foreach ($results as $result) {
+                foreach($results as $result) {
                     $value = $result[$field];
                     break;
                 }
@@ -207,8 +207,8 @@ abstract class Migration {
                 ->setSelect(array_map([Convert::class, 'symbol2sql'], $fields))->setWhere(['"ID"' => $id]);
             $results = $query->execute();
             if ($results) {
-                foreach ($results as $result) {
-                    foreach ($fields as $field) {
+                foreach($results as $result) {
+                    foreach($fields as $field) {
                         $values[$field] = $result[$field];
                     }
                     break;
@@ -450,8 +450,8 @@ abstract class Migration {
 
         // Since we could potentially clobber data before throwing an exception, make sure ALL source/destination table
         // pairs exist and fail early rather than after a call to ::copyTable() succeeds (particularly one that purges).
-        foreach ($suffixes as $suffix) {
-            foreach ([$fromBaseTable, $toBaseTable] as $baseTable) {
+        foreach($suffixes as $suffix) {
+            foreach([$fromBaseTable, $toBaseTable] as $baseTable) {
                 $table = $baseTable . $suffix;
                 if (!self::tableExists($table)) throw new MigrationException("Table '$table' does not exist.");
             }
