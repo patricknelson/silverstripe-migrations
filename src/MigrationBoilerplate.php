@@ -5,7 +5,7 @@ namespace PatrickNelson\Migrations;
 class MigrationBoilerplate extends Migration {
 
     /**
-     * Run the migrations.
+     * Run the migration.
      *
      * @return void
      */
@@ -14,7 +14,7 @@ class MigrationBoilerplate extends Migration {
     }
 
     /**
-     * Reverse the migrations.
+     * Reverse the migration.
      *
      * @return void
      */

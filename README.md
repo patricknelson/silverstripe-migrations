@@ -1,7 +1,7 @@
 # Silverstripe Database Migrations
-Facilitates atomic database migrations in Silverstripe. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module was built to work as an augmentation to the existing `dev/build` that is already commonplace in Silverstripe.
+Facilitates atomic database migrations in Silverstripe. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module works as an augmentation to the existing `dev/build` in Silverstripe.
 
-Silverstripe's database schema is *declarative*, which means that the code defines what the state of the database *currently should be* and therefore the system will do what it needs to do in order to change the current schema to match that declared structure at any given moment (by proxy of `dev/build`). In contrast, database migrations offer a method to *imperatively* define how that structure (as well as the data) should change progressively over time. The advantage to this is that it makes it easier for you to rename columns (while retaining data), combine multiple columns or even change the format of data over time without leaving behind legacy code which should no longer exist, helping keep things tidy.
+Silverstripe's database schema is ***declarative***, where code defines what the state of the database _currently should be_ and the system will take steps to match that declared state (done via `dev/build`). Database migrations offer a method to extend this by ***imperatively*** changing database state progressively _over time_. This makes it easier to rename columns without losing data, combine multiple columns, or even change the format of data without leaving behind legacy code. It helps keep you things tidy!
 
 
 ## Installation
@@ -24,21 +24,22 @@ sake dev/tasks/MigrateTask [option]
 
 ### Commands
 
-Run any pending migrations that haven't been run yet (multiple are clustered together as a "batch"):
+Run any new/pending migrations (multiple are clustered together as a "batch"):
 
 ```bash
 sake dev/tasks/MigrateTask up
 ```
 
-Reverse previous batch of migrations:
+Reverse the previous batch of migrations:
 
 ```bash
 sake dev/tasks/MigrateTask down
 ```
 
-Make a new migration file for you with boilerplate code.
+Make a new migration with boilerplate code:
 
-```
+```bash
+# Creates class called Migration_MigrationName
 sake dev/tasks/MigrateTask make:migration_name
 ```
 
@@ -77,11 +78,13 @@ You can easily generate migration files by running the task with the `make:migra
 
 **Example:**
 
-`sake dev/tasks/MigrateTask make:change_serialize_to_json`
+```bash
+sake dev/tasks/MigrateTask make:change_serialize_to_json
+```
 
-This will generate a file following the format `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `App\Migrations\Migration_ChangeSerializeToJson` with the configuration above.
+This will generate a filename formatted like `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to ensure it is executed in order. That file will contain a class named `Migration_ChangeSerializeToJson` (converting `snake_case` to `CamelCase`).
 
-Once modified, your migration would look like this:
+Once modified, your migration might look like this:
 
 ```php
 <?php
@@ -94,7 +97,7 @@ use PatrickNelson\Migrations\Migration;
 class Migration_ChangeSerializeToJson extends Migration {
 
 	/**
-	 * Run the migrations.
+	 * Run the migration.
 	 *
 	 * @return void
 	 */
@@ -107,7 +110,7 @@ class Migration_ChangeSerializeToJson extends Migration {
 	}
 
 	/**
-	 * Reverse the migration (this does the opposite of the method above).
+	 * Reverse the migration (this should do the exact opposite of the method above).
 	 *
 	 * @return void
 	 */
