@@ -1,50 +1,76 @@
-# SilverStripe 3.x Database Migrations
-Facilitates atomic database migrations in SilverStripe 3.x. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module was built to work as an augmentation to the existing `dev/build` that is already commonplace in SilverStripe.
+# Silverstripe Database Migrations
+Facilitates atomic database migrations in Silverstripe. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module works as an augmentation to the existing `dev/build` in Silverstripe.
 
-SilverStripe's database schema is *declarative*, which means that the code defines what the state of the database *currently should be* and therefore the system will do what it needs to do in order to change the current schema to match that declared structure at any given moment (by proxy of `dev/build`). In contrast, database migrations offer a method to *imperatively* define how that structure (as well as the data) should change progressively over time. The advantage to this is that it makes it easier for you to rename columns (while retaining data), combine multiple columns or even change the format of data over time without leaving behind legacy code which should no longer exist, helping keep things tidy.
+Silverstripe's database schema is ***declarative***, where code defines what the state of the database _currently should be_ and the system will take steps to match that declared state (done via `dev/build`). Database migrations offer a method to extend this by ***imperatively*** changing database state progressively _over time_. This makes it easier to rename columns without losing data, combine multiple columns, or even change the format of data without leaving behind legacy code. It helps keep you things tidy!
 
 
 ## Installation
 
-### Composer
+Install with `composer`:
 
-1. Run `composer require "patricknelson/silverstripe-migrations:dev-master"`
-2. Run `sake dev/build` from the command line to ensure it is properly loaded into SilverStripe.
-
-### Manual Installation
-
-1. Download the latest [repository zip file](https://github.com/patricknelson/silverstripe-migrations/archive/master.zip).
-2. Extract the folder `silverstripe-migrations-master` and rename it `migrations`.
-3. Copy that folder to the root of your website.
-4. Run `sake dev/build` from the command line to ensure it is properly loaded into SilverStripe.
+```bash
+composer require patricknelson/silverstripe-migrations
+sake dev/build
+```
 
 
 ## How to Use
 
-This module sets up a task called `MigrateTask` which is available from the command line only via either:
+This module sets up a task called `MigrateTask` which is available from the command line only via:
 
-- `sake dev/tasks/MigrateTask [option]`
-- `php framework/cli-script.php dev/tasks/MigrateTask [option]`
+```bash
+sake dev/tasks/MigrateTask [option]
+```
 
-Using this task, you can do the following:
+### Commands
 
-1. Run migrations (i.e. "up").
-	- `sake dev/tasks/MigrateTask up`
-2. Reverse previous migrations (i.e. "down").
-	- `sake dev/tasks/MigrateTask down`
-3. Make a new migration file for you with boilerplate code.
-	- `sake dev/tasks/MigrateTask make:migration_name`
-	- **Note:** This file will be automatically placed in your project directory in the path `<project>/code/migrations`. You can customize this location by defining a `MIGRATIONS_PATH` constant which should be the absolute path to the desired directory (either in your `_ss_environment.php` or `_config.php` files). Also, migration files that are automatically generated will be pseudo-namespaced with a `Migration_` prefix to help reduce possible class name collisions.
+Run any new/pending migrations (multiple are clustered together as a "batch"):
+
+```bash
+sake dev/tasks/MigrateTask up
+```
+
+Reverse the previous batch of migrations:
+
+```bash
+sake dev/tasks/MigrateTask down
+```
+
+Make a new migration with boilerplate code:
+
+```bash
+# Creates class called Migration_MigrationName
+sake dev/tasks/MigrateTask make:migration_name
+```
+
+### Configuration
+
+To customize generated migrations, add `<project>/_config/migrations.yml`:
+
+```yaml
+---
+Name: project-migrations
+After:
+  - '#patricknelson-migrations'
+---
+PatrickNelson\Migrations\MigrateTask:
+  # Empty selects <project>/src/migrations; relative paths are resolved against BASE_PATH.
+  migration_path: 'app/src/custom/path'
+
+  # Empty selects the global namespace. Class names always retain the Migration_ prefix.
+  migration_namespace: 'App\Migrations'
+```
 
 ### How it Works
 
 **Up**
 
-Each time you run an `up` migration, this task will look through all migration files that have been setup in your `<project>/code/migrations` folder (which you can customize) and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration file and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.
+Each time you run an `up` migration, this task will look through all migration files that have been setup in your configured migrations folder and then compare that to a list of migrations that it has already run in the `DatabaseMigrations` table. If it finds a new migration that has not yet been run, it will execute the `->up()` method on that migration class and keep a record of it in that table. Also, it will make sure to only run migrations in alphanumeric order based on their file name.
 
 **Down**
 
-When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, they are done in reverse order one batch at a time to help ensure consistency.
+When multiple migrations are run together, they are considered a single batch and can be rolled back (or reversed) all together as well by using the `down` option. When `down` migrations are performed, the corresponding `->down()` methods are executed in reverse order, one batch at a time to help ensure consistency.
+
 
 ### Writing Migrations
 
@@ -52,17 +78,26 @@ You can easily generate migration files by running the task with the `make:migra
 
 **Example:**
 
-`sake dev/tasks/MigrateTask make:change_serialize_to_json`
+```bash
+sake dev/tasks/MigrateTask make:change_serialize_to_json
+```
 
-This will generate a file following the format `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to name the file (to ensure it is executed in order) and containing the class `Migration_ChangeSerializeToJson`. It should look like this:
+This will generate a filename formatted like `YYYY_MM_DD_HHMMSS_change_serialize_to_json.php`, using the current date to ensure it is executed in order. That file will contain a class named `Migration_ChangeSerializeToJson` (converting `snake_case` to `CamelCase`).
+
+Once modified, your migration might look like this:
 
 ```php
 <?php
 
+namespace App\Migrations;
+
+use App\MyDataObject;
+use PatrickNelson\Migrations\Migration;
+
 class Migration_ChangeSerializeToJson extends Migration {
 
 	/**
-	 * Run the migrations.
+	 * Run the migration.
 	 *
 	 * @return void
 	 */
@@ -70,11 +105,12 @@ class Migration_ChangeSerializeToJson extends Migration {
 		// Go through each DataObject and convert the column format from serialized to JSON.
 		foreach(MyDataObject::get() as $instance) {
 			$instance->EncodedField = json_encode(unserialize($instance->EncodedField));
+			$instance->write();
 		}
 	}
 
 	/**
-	 * Reverse the migration (this does the opposite of the method above).
+	 * Reverse the migration (this should do the exact opposite of the method above).
 	 *
 	 * @return void
 	 */
@@ -82,20 +118,38 @@ class Migration_ChangeSerializeToJson extends Migration {
 		// Go through each DataObject and convert the column format back from JSON to serialized again.
 		foreach(MyDataObject::get() as $instance) {
 			$instance->EncodedField = serialize(json_decode($instance->EncodedField));
+			$instance->write();
 		}
 	}
 }
 
 ```
+
 A collection of helper methods are also available on the `Migration` class that perform common database interactions, such as dropping columns from a table or retrieving a value from a column that is no longer available through the ORM but still exists in the database table.
+
+### Obsolete migrations
+
+You can flag old migrations that should no longer be run (but maybe kept in code for reference) as obsolete by simply adding `protected $obsolete = true` to your class, e.g.
+
+
+```php
+class Migration_OutdatedMigration extends Migration {
+
+    protected $obsolete = true;
+
+    // ...
+}
+```
+
+Alternatively, you can create a subdirectory such as `migrations/obsolete/` and add the special `_manifest_exclude` file (see [Silverstripe documentation](https://docs.silverstripe.org/en/developer_guides/execution_pipeline/manifests/#php-class-manifest)) and relocate obsolete migrations there. This will prevent `MigrateTask` from seeing the migrations and attempting to run them.
 
 ### Helper Methods
 
 Documentation for helper methods can be found [here](doc/HelperMethods.md).
 
-### Running Your Migrations
+### Tip: Running New Migrations
 
-It's important that before you ever migrate `up` or `down` that you make sure you run the SilverStripe `dev/build` task **first**. For example, you could do the following:
+It's important that before you ever migrate `up` or `down` that you make sure you run the `dev/build` task **first**. For example, you could do the following:
 
 ```bash
 sake dev/build
@@ -104,14 +158,26 @@ sake dev/tasks/MigrateTask up
 
 This will ensure that both the migration classes are available (in the class map) and that the new fields you've declared in your `DataObject`'s are accessible to your migration.
 
+<!-- TODO: Add another helpful tip later about removing old/outdated schema in a way that is safe, e.g. break it up into multiple deploys -->
 
-## Known Issues
 
-Due to the fact that the existing `dev/build` process runs independently from these migrations (instead of being based already on migrations), it is possible that you might end up running migrations that are no longer applicable to the given declared state in your current DataObject `::$db` static definitions. To help avoid issues in more complex websites, you can either perform checks within the migrations themselves or setup new migrations to coexist with code that is bundled into release branches and deploy them discretely (e.g. `release-1.2.0` or `hotfix-1.2.1`). The primary goal is to ensure that data/content in existing environments can be retained and changed selectively without losing a column, a table or replacing an entire table or database each time your schema has to change.
+## Change Log
+
+- v0.x
+- v1: details at https://github.com/patricknelson/silverstripe-migrations/pull/24
+  - Add support for Silverstripe 4
+  - Added compatibility for PHP 7.4 to PHP 8.5
+  - Moved to `PatrickNelson\Migrations` namespace
+  - Removed support for `Migration::loginAsAdmin()` and `::whileAdmin()` helper methods. They are no longer required in SS4 for supporting the core `::publish()` and `::unpublish()` methods.
+  - Added strict parameter and return types to all migration helpers
+  - Moved library classes to `src/` with PSR-4 autoloading.
+  - Table and column names are now quoted as identifiers via `Convert::symbol2sql()` instead of escaped with `Convert::raw2sql()`. Remove manual identifier quoting passed to methods, such as backticks around column names passed to `addColumnsToTable()`, e.g. ``addColumnsToTable('MyObject', ['`FooBar`' => 'INT'])`` should be cleaned up
+  - Replaced `MIGRATION_PATH` with YAML configuration for the generation path and optional namespace. New migrations remain global by default and always keep the `Migration_` prefix.
 
 
 ## To Do
 
+<!-- TODO: Probably best to just remove these and/or migrate to issues for better visibility (plus this is clutter) -->
+
 - Add ability to "prune" database fields and tables, which not only removes defunct fields/tables which are no longer used, but also re-orders them. Would be a highly destructive feature but potentially very helpful if used regularly (and responsibly).
-- Method to obtain a hash as a signature for the current schema being defined by `DataObject` child classes. Will be helpful in creating migrations that should only be run if the current schema/state matches a certain hash.
-- Setup a `--pretend` option to allow the ability to preview all queries that will be executed by migrations (both up and down). 
+- Setup a `--pretend` option to allow the ability to preview all queries that will be executed by migrations (both up and down).

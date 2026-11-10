@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/silverstripe/cms/tests/bootstrap.php" colors="true" failOnRisky="true">
+    <php>
+        <env name="SS_ENVIRONMENT_TYPE" value="dev" force="true" />
+        <env name="SS_DATABASE_CLASS" value="MySQLDatabase" />
+        <env name="SS_DATABASE_SERVER" value="127.0.0.1" />
+        <env name="SS_DATABASE_USERNAME" value="root" />
+        <env name="SS_DATABASE_PASSWORD" value="" />
+        <env name="SS_DATABASE_NAME" value="migrations_test" />
+    </php>
+    <testsuites>
+        <testsuite name="migrations">
+            <directory suffix="Test.php">tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

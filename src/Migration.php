@@ -1,0 +1,502 @@
+<?php
+
+namespace PatrickNelson\Migrations;
+
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Convert;
+use SilverStripe\Core\Manifest\ClassLoader;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
+use SilverStripe\ORM\Queries\SQLDelete;
+use SilverStripe\ORM\Queries\SQLInsert;
+use SilverStripe\ORM\Queries\SQLSelect;
+use SilverStripe\ORM\Queries\SQLUpdate;
+use SilverStripe\ORM\ValidationException;
+use SilverStripe\Versioned\Versioned;
+use Throwable;
+
+/**
+ * All migrations that must be executed must be descended from this class and define both an ->up() and a ->down()
+ * method. Migrations will be executed in alphanumeric order
+ *
+ * @author   Patrick Nelson, pat@catchyour.com
+ * @since    2015-02-17
+ */
+abstract class Migration {
+
+    protected $obsolete = false;
+
+    abstract public function up();
+
+    abstract public function down();
+
+    /**
+     * Indicates that the migration is no longer relevant or able to be run from scratch due to backward
+     * incompatibilities, which may occur as the codebase changes over time. Useful when wanting to retain old migration
+     * files for reference purposes and consistency.
+     *
+     * @return bool
+     */
+    public function isObsolete(): bool {
+        return (bool) $this->obsolete;
+    }
+
+    #######################################
+    ## DATABASE MIGRATION HELPER METHODS ##
+    #######################################
+
+    /**
+     * Returns true if the table exists in the database
+     *
+     * @param   string  $table
+     * @return  bool
+     */
+    public static function tableExists(string $table): bool {
+        $tables = DB::get_schema()->tableList();
+        return array_key_exists(strtolower($table), $tables);
+    }
+
+    /**
+     * Returns true if a column exists in a database table
+     *
+     * @param   string  $table
+     * @param   string  $column
+     * @return  bool
+     */
+    public static function tableColumnExists(string $table, string $column): bool {
+        if (!self::tableExists($table)) return false;
+        $columns = self::getTableColumns($table);
+        return array_key_exists($column, $columns);
+    }
+
+    /**
+     * Returns true if an array of columns exist on a database table
+     *
+     * @param   string  $table
+     * @param   array   $columns
+     * @return  bool
+     */
+    public static function tableColumnsExist(string $table, array $columns): bool {
+        if (!self::tableExists($table)) return false;
+        return count(array_intersect($columns, array_keys(self::getTableColumns($table)))) === count($columns);
+    }
+
+    /**
+     * Returns an array of columns for a database table
+     *
+     * @param   string  $table
+     * @return  array   (empty if table doesn't exist) e.g. array('ID' => 'int(11) not null auto_increment')
+     */
+    public static function getTableColumns(string $table): array {
+        if (!self::tableExists($table)) return [];
+        return DB::get_schema()->fieldList($table);
+    }
+
+    /**
+     * Allows to you fetch the specific table (and thus DataObject) that a particular field exists on, since they're
+     * merged at runtime. This will actually iterate through the class ancestry in order to determine the table in which
+     * a field actually exists.
+     *
+     * @param   string  $className
+     * @param   string  $field
+     * @return  string
+     */
+    public static function getTableForField(string $className, string $field): string {
+        // Let's get our hands dirty on this ancestry filth and reference the database because the private static ::$db isn't reliable (seriously).
+        $ancestors = ClassInfo::ancestry($className);
+        foreach($ancestors as $ancestor) {
+            if ($ancestor === DataObject::class || !is_subclass_of($ancestor, DataObject::class)) continue;
+            $table = DataObject::getSchema()->tableName($ancestor);
+            if ($table && static::tableColumnExists($table, $field)) {
+                return $table;
+            }
+        }
+
+        // Still not found.
+        return '';
+    }
+
+    /**
+     * Returns a list of all possible DataObject database tables affected by the specified data extension class name.
+     * Good for use in database migrations when changing columns applied by an extension.
+     *
+     * @param class-string $extension
+     * @return string[]
+     */
+    public static function getDataExtensionTables(string $extension): array {
+        $manifest = ClassLoader::inst()->getManifest();
+        $allClasses = $manifest->getDescendantsOf(DataObject::class);
+
+        $tables = [];
+        foreach($allClasses as $class) {
+            // Only the classes that have the extension applied directly matter, since that's where the data will be
+            // stored. These fields are merged at runtime for descendants.
+            $extensions = Config::inst()->get($class, 'extensions', Config::UNINHERITED);
+            if (!is_array($extensions) || !in_array($extension, $extensions)) continue;
+
+            // Build array of all possible tables that could contain our column.
+            $table = DataObject::getSchema()->tableName($class);
+            if (!$table) continue;
+            $tables[] = $table;
+
+            // If versioned, add the extra copies.
+            $allExtensions = Config::inst()->get($class, 'extensions');
+            if (is_array($allExtensions) && in_array(Versioned::class, $allExtensions)) {
+                $tables[] = $table . '_Live';
+                $tables[] = $table . '_Versions';
+            }
+        }
+
+        return $tables;
+    }
+
+    /**
+     * Drops columns from a database table.
+     * Returns array of columns that were dropped
+     *
+     * @param   string    $table
+     * @param   array     $columns
+     * @return  string[]
+     */
+    public static function dropColumnsFromTable(string $table, array $columns): array {
+        $droppedColumns = [];
+        $columnsInTable = array_intersect($columns, array_keys(self::getTableColumns($table)));
+        if (!$columnsInTable) return $droppedColumns;
+        $tableSql = Convert::symbol2sql($table);
+        foreach($columnsInTable as $column) {
+            DB::query("ALTER TABLE $tableSql DROP COLUMN " . Convert::symbol2sql($column));
+            $droppedColumns[] = $column;
+        }
+        return $droppedColumns;
+    }
+
+    /**
+     * Add columns to a database table if they don't exist.
+     * Returns array of columns that were added
+     *
+     * @param   string    $table
+     * @param   array     $columns    e.g. array('MyColumn' => 'VARCHAR(255) CHARACTER SET utf8')
+     * @return  string[]
+     */
+    public static function addColumnsToTable(string $table, array $columns): array {
+        $addedColumns = [];
+        $existingColumns = self::getTableColumns($table);
+        if (!$existingColumns) return $addedColumns;
+        $tableSql = Convert::symbol2sql($table);
+        foreach($columns as $column => $properties) {
+            if (!array_key_exists($column, $existingColumns)) {
+                DB::query(
+                    "ALTER TABLE $tableSql ADD " . Convert::symbol2sql($column)
+                    . ' ' . $properties
+                );
+                $addedColumns[] = $column;
+            }
+        }
+        return $addedColumns;
+    }
+
+    /**
+     * Gets the value for a single column in a row from the database by the ID column.
+     * Useful when a field has been removed from the class' `$db` property,
+     * and therefore is no longer accessible through the ORM.
+     * Returns `null` if the table, column or row does not exist.
+     *
+     * @param   string  $table
+     * @param   string  $field
+     * @param   int     $id
+     * @return  string|null
+     */
+    public static function getRowValueFromTable(string $table, string $field, int $id): ?string {
+        $value = null;
+        if (self::tableColumnExists($table, $field)) {
+            $query = new SQLSelect();
+            $query->setFrom(Convert::symbol2sql($table))
+                ->setSelect([Convert::symbol2sql($field)])->setWhere(['"ID"' => $id]);
+            $results = $query->execute();
+            if ($results) {
+                foreach($results as $result) {
+                    $value = $result[$field];
+                    break;
+                }
+            }
+        }
+        return $value;
+    }
+
+    /**
+     * Gets the values for multiple rows on a database table by the ID column.
+     * Useful when fields have been removed from the class' `$db` property,
+     * and therefore are no longer accessible through the ORM.
+     * Returns an empty array if the table, any of the columns or the row do not exist.
+     *
+     * @param    string  $table
+     * @param    array   $fields
+     * @param    int     $id
+     * @return   array   array{string: mixed}
+     */
+    public static function getRowValuesFromTable(string $table, array $fields, int $id): array {
+        $values = [];
+        if (self::tableColumnsExist($table, $fields)) {
+            $query = new SQLSelect();
+            $query->setFrom(Convert::symbol2sql($table))
+                ->setSelect(array_map([Convert::class, 'symbol2sql'], $fields))->setWhere(['"ID"' => $id]);
+            $results = $query->execute();
+            if ($results) {
+                foreach($results as $result) {
+                    foreach($fields as $field) {
+                        $values[$field] = $result[$field];
+                    }
+                    break;
+                }
+            }
+        }
+        return $values;
+    }
+
+    /**
+     * Sets the values for multiple rows on a database table by the ID column.
+     * Useful when fields have been removed from the class' `$db` property,
+     * and therefore are no longer accessible through the ORM.
+     * Returns false if the table or any of the rows do not exist.
+     * Returns true if the SQL query was executed.
+     *
+     * @param   string    $table
+     * @param   array     $values  Ex: ['FieldName' => value]
+     * @param   int|null  $id      Note: Null only works here if $insert = true.
+     * @param   bool      $insert  Allows insertion of a new record if the ID provided is null or doesn't exist.
+     *                             NOTE: If an "ID" field is passed, that ID value will be retained.
+     * @return  bool               Will return true if anything was changed, false otherwise.
+     */
+    public static function setRowValuesOnTable(string $table, array $values, ?int $id = null, bool $insert = false): bool {
+        // TODO: This should maybe throw an exception instead.
+        if (!self::tableColumnsExist($table, array_keys($values))) return false;
+
+        // Assume it exists unless we're actually going to allow inserting. Then we'll really check for sure.
+        $exists = true;
+        if ($insert) {
+            // Ensure the ID we're checking now is the same as the one we're inserting to help prevent issues with duplicate keys.
+            $checkID = $id;
+            if (isset($values['ID'])) $checkID = $values['ID'];
+            $select = new SQLSelect('COUNT(*)', Convert::symbol2sql($table), ['"ID"' => $checkID]);
+            $result = $select->execute();
+            $exists = (bool) (int) $result->value();
+        }
+
+        // Pull out an ID (if applicable).
+        if ($id === null && array_key_exists('ID', $values)) $id = $values['ID'];
+        $assignments = array_combine(
+            array_map(fn(string $field): string => Convert::symbol2sql($field), array_keys($values)),
+            array_values($values)
+        );
+
+        if ($exists) {
+            // Generate an execute an UPDATE query.
+            $update = new SQLUpdate(Convert::symbol2sql($table), $assignments, ['"ID"' => $id]);
+            $update->execute();
+            return true;
+
+        } elseif($insert) {
+            // Generate an INSERT query instead.
+            $insert = new SQLInsert(Convert::symbol2sql($table), $assignments);
+            $insert->execute();
+            return true;
+        }
+
+        // Nothing was done.
+        return false;
+    }
+
+    /**
+     * Simplifies saving and publishing of pages, since migrations are run from command line.
+     *
+     * NOTE: By default, this method will skip publishing if the page already has a draft version in the database with
+     * pending changes. This allows you to do the following without worrying about accidentally forcing other unexpected
+     * changes live:
+     *
+     *     $page->Title = 'New Page Title';
+     *     static::publish($page);
+     *
+     * If the page *does* have pending changes, it will simply save the updated draft and move on.
+     *
+     * @param  SiteTree  $page
+     * @param  bool      $force  By default, this will skip publishing if the page currently has a draft version to
+     *                           prevent accidentally pushing changes live. Override by explicitly setting this to true.
+     *
+     * @throws    MigrationException
+     */
+    public static function publish(SiteTree $page, bool $force = false): void {
+        try {
+            // Check before saving so this migration does not publish a pre-existing draft's pending changes.
+            $shouldPublish = $force || !$page->isModifiedOnDraft();
+            $page->write();
+            if ($shouldPublish) {
+                $page->publishRecursive();
+            }
+        } catch (Throwable $e) {
+            throw new MigrationException('Cannot publish page: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Simplifies UN-publishing of an actual page instance (since migrations are run from command line).
+     *
+     * @param   SiteTree            $page
+     * @throws  MigrationException
+     */
+    public static function unpublish(SiteTree $page): void {
+        try {
+            $page->doUnpublish();
+        } catch (Throwable $e) {
+            throw new MigrationException('Cannot unpublish page: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Shorthand to make it easier to update the page type, since SilverStripe has a very specific method for
+     * accomplishing this.
+     *
+     * @param   SiteTree $page
+     * @param   string   $pageType
+     * @throws  MigrationException
+     */
+    public static function setPageType(SiteTree $page, string $pageType): void {
+        if (!is_a($pageType, SiteTree::class, true)) throw new MigrationException("The specified page type '$pageType' must be an instance (or child) of 'SiteTree'.");
+        /** @var SiteTree $page */
+        $page = $page->newClassInstance($pageType);
+        static::publish($page, true);
+    }
+
+    /**
+     * Allows you to easily transition data from one field name to the next. Works with generic data objects as well as
+     * instances of the SiteTree.
+     *
+     * CAUTION: This method is quite abstract, so it could take a very long time to run if you have many objects to
+     * transition, especially SiteTree instances.
+     *
+     * Pages with pending draft changes retain their live version, matching ::publish()'s safeguards.
+     *
+     * @param   DataObject     $dataObject
+     * @param   string         $oldFieldName
+     * @param   string         $newFieldName
+     * @param   callable|null  $transformation
+     * @throws  MigrationException|ValidationException
+     */
+    public static function transitionField(DataObject $dataObject, string $oldFieldName, string $newFieldName, ?callable $transformation = null): void {
+        // Get and transform data (if applicable).
+        $table = static::getTableForField(get_class($dataObject), $oldFieldName);
+        $value = $table === '' ? null : static::getRowValueFromTable($table, $oldFieldName, $dataObject->ID);
+        if ($transformation) $value = call_user_func($transformation, $value);
+
+        // Set transformed value and save (varies depending on if this is a page or not).
+        $dataObject->setField($newFieldName, $value);
+        if ($dataObject instanceof SiteTree) {
+            // Save + publish update if already published, being careful not to publish if currently unpublished.
+            static::publish($dataObject);
+        } else {
+            $dataObject->write();
+        }
+    }
+
+    /**
+     * Copies all values from one table to another. Will override any existing values with matching ID's.
+     *
+     * @param   string      $fromTable      Name of SOURCE table to copy values from.
+     * @param   string      $toTable        Name of DESTINATION table to copy values to.
+     * @param   array|null  $fieldMapping   Array of fields to copy (and ONLY these fields). Can also specify key => value
+     *                                      pairs to map between old/new names (instead of just values). Note: Leave
+     *                                      empty (or pass null) to automatically assume ALL fields from source table (including ID).
+     * @param   bool        $purgeDest      Ensures all data in the DESTINATION table matches the source.
+     * @param   mixed|null  $where          An optional filter passed directly to ->setWhere() method on SQLSelect. TODO: SSv5: Add mixed type hint (8.x only)
+     * @throws  MigrationException
+     */
+    public static function copyTable(string $fromTable, string $toTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null): void {
+        if (!static::tableExists($fromTable)) throw new MigrationException("Table '$fromTable' does not exist.");
+        if (!static::tableExists($toTable)) throw new MigrationException("Table '$toTable' does not exist.");
+
+        // Initialize defaults.
+        if ($fieldMapping === null) $fieldMapping = []; // Normalize to empty.
+        if ($fieldMapping === []) {
+            // If empty: Use all fields from the source.
+            $fieldMapping = array_keys(static::getTableColumns($fromTable));
+        }
+
+        // Since an ID is required to prevent duplication of data, add it now if it's not already setup.
+        // TODO: Should this be optional?
+        if (!in_array('ID', $fieldMapping)) $fieldMapping[] = 'ID';
+
+        // Separate out the source/destination fields from the field mapping to help with selection and validation (correspondingly).
+        $sourceFields = array_map(function($key, $value) {
+            if (!is_numeric($key)) return $key;
+            return $value;
+        }, array_keys($fieldMapping), array_values($fieldMapping));
+        $destFields = array_values($fieldMapping);
+
+        $sourceFieldDiff = array_diff($sourceFields, array_keys(self::getTableColumns($fromTable)));
+        if ($sourceFieldDiff) throw new MigrationException("Source fields do not exist in '$fromTable': " . join(', ', $sourceFieldDiff));
+
+        // Validate columns in the destination first and ensure they exist first before moving forward, since you
+        // don't want to perform a DELETE on an entire table unless you're sure the entire operation will complete.
+        $destActualFields = array_keys(self::getTableColumns($toTable));
+        $destFieldDiff = array_diff($destFields, $destActualFields);
+        if (count($destFieldDiff) !== 0) throw new MigrationException("The field(s) '" . join(', ', $destFieldDiff) . "' do not exist in the destination table '$toTable'.");
+
+        // Purge now, if specified.
+        if ($purgeDest) {
+            $delete = new SQLDelete(Convert::symbol2sql($toTable));
+            $delete->execute();
+        }
+
+        // Begin fetching rows and copying them over now.
+        $select = new SQLSelect(
+            array_map([Convert::class, 'symbol2sql'], $sourceFields),
+            Convert::symbol2sql($fromTable)
+        );
+        if ($where !== null) $select->setWhere($where);
+        $result = $select->execute();
+        while($sourceRow = $result->next()) { // TODO: SSv5: Move to iterator pattern
+            // Convert row fields based on our mapping.
+            $destRow = [];
+            foreach($sourceRow as $field => $value) {
+                if (array_key_exists($field, $fieldMapping)) $field = $fieldMapping[$field];
+                $destRow[$field] = $value;
+            }
+
+            // Update table.
+            static::setRowValuesOnTable($toTable, $destRow, null, true);
+        }
+    }
+
+    /**
+     * Same exact purpose as ::copyTable(), however, also applies changes to other tables associated with versioned
+     * objects. Also, this could be potentially much slower due to the extra tables being copied.
+     *
+     * NOTE: Please see ::copyTable() for more details on the parameters below.
+     *
+     * @param   string      $fromBaseTable  The name of SOURCE base table name to copy field data from.
+     * @param   string      $toBaseTable    The name of DESTINATION base table name to copy field data to.
+     * @param   array|null  $fieldMapping
+     * @param   bool        $purgeDest
+     * @param   mixed|null  $where          TODO: SSv5: Add mixed type hint (8.x only)
+     *
+     * @throws  MigrationException
+     */
+    public static function copyVersionedTable(string $fromBaseTable, string $toBaseTable, ?array $fieldMapping = null, bool $purgeDest = false, $where = null): void {
+        $suffixes = ['', '_Live', '_Versions'];
+
+        // Since we could potentially clobber data before throwing an exception, make sure ALL source/destination table
+        // pairs exist and fail early rather than after a call to ::copyTable() succeeds (particularly one that purges).
+        foreach($suffixes as $suffix) {
+            foreach([$fromBaseTable, $toBaseTable] as $baseTable) {
+                $table = $baseTable . $suffix;
+                if (!self::tableExists($table)) throw new MigrationException("Table '$table' does not exist.");
+            }
+        }
+
+        foreach($suffixes as $suffix) {
+            self::copyTable($fromBaseTable . $suffix, $toBaseTable . $suffix, $fieldMapping, $purgeDest, $where);
+        }
+    }
+
+}
