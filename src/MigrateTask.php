@@ -185,6 +185,7 @@ class MigrateTask extends BuildTask {
             $this->lastMigrationFile = $baseName;
 
             // Run migration.
+            $this->output("Migrating: $baseName...", false);
             /* @var $instance Migration */
             $instance = new $className();
             if (!$instance->isObsolete()) {
@@ -199,7 +200,7 @@ class MigrateTask extends BuildTask {
             $migration->Stamp = time();
             $migration->write();
 
-            $this->output("Migrated: $baseName");
+            $this->output(" done!");
         }
     }
 
@@ -315,8 +316,11 @@ class MigrateTask extends BuildTask {
      *
      * @param   string  $text
      */
-    protected function output($text) {
-        if (!$this->silent) echo "$text\n";
+    protected function output($text, $lineBreak = true) {
+        if (!$this->silent) {
+            echo $text;
+            if ($lineBreak) echo "\n";
+        }
     }
 
     /**
