@@ -69,6 +69,14 @@ Returns the table containing a field in the class hierarchy, or an empty string 
 $table = static::getTableForField(\MyDataObject::class, 'OldField');
 ```
 
+#### `(array) getDataExtensionTables(string $extension)`
+
+Returns possible tables for DataObjects with the extension applied directly, including `_Live` and `_Versions` tables for versioned classes.
+
+```php
+$tables = static::getDataExtensionTables(\MyDataExtension::class);
+```
+
 #### `(array) dropColumnsFromTable(string $table, array $columns)`
 
 Drops columns from a database table. Returns array of columns that were dropped.

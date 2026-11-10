@@ -4,7 +4,9 @@ namespace PatrickNelson\Migrations;
 
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\ClassInfo;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Convert;
+use SilverStripe\Core\Manifest\ClassLoader;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\Queries\SQLDelete;
@@ -12,6 +14,7 @@ use SilverStripe\ORM\Queries\SQLInsert;
 use SilverStripe\ORM\Queries\SQLSelect;
 use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\Versioned\Versioned;
 use Throwable;
 
 /**
@@ -113,6 +116,40 @@ abstract class Migration {
 
         // Still not found.
         return '';
+    }
+
+    /**
+     * Returns a list of all possible DataObject database tables affected by the specified data extension class name.
+     * Good for use in database migrations when changing columns applied by an extension.
+     *
+     * @param class-string $extension
+     * @return string[]
+     */
+    public static function getDataExtensionTables(string $extension): array {
+        $manifest = ClassLoader::inst()->getManifest();
+        $allClasses = $manifest->getDescendantsOf(DataObject::class);
+
+        $tables = [];
+        foreach($allClasses as $class) {
+            // Only the classes that have the extension applied directly matter, since that's where the data will be
+            // stored. These fields are merged at runtime for descendants.
+            $extensions = Config::inst()->get($class, 'extensions', Config::UNINHERITED);
+            if (!is_array($extensions) || !in_array($extension, $extensions)) continue;
+
+            // Build array of all possible tables that could contain our column.
+            $table = DataObject::getSchema()->tableName($class);
+            if (!$table) continue;
+            $tables[] = $table;
+
+            // If versioned, add the extra copies.
+            $allExtensions = Config::inst()->get($class, 'extensions');
+            if (is_array($allExtensions) && in_array(Versioned::class, $allExtensions)) {
+                $tables[] = $table . '_Live';
+                $tables[] = $table . '_Versions';
+            }
+        }
+
+        return $tables;
     }
 
     /**
