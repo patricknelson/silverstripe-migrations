@@ -161,18 +161,9 @@ This will ensure that both the migration classes are available (in the class map
 <!-- TODO: Add another helpful tip later about removing old/outdated schema in a way that is safe, e.g. break it up into multiple deploys -->
 
 
-## Change Log
+## Changelog
 
-- v0.x
-- v1: details at https://github.com/patricknelson/silverstripe-migrations/pull/24
-  - Add support for Silverstripe 4
-  - Added compatibility for PHP 7.4 to PHP 8.5
-  - Moved to `PatrickNelson\Migrations` namespace
-  - Removed support for `Migration::loginAsAdmin()` and `::whileAdmin()` helper methods. They are no longer required in SS4 for supporting the core `::publish()` and `::unpublish()` methods.
-  - Added strict parameter and return types to all migration helpers
-  - Moved library classes to `src/` with PSR-4 autoloading.
-  - Table and column names are now quoted as identifiers via `Convert::symbol2sql()` instead of escaped with `Convert::raw2sql()`. Remove manual identifier quoting passed to methods, such as backticks around column names passed to `addColumnsToTable()`, e.g. ``addColumnsToTable('MyObject', ['`FooBar`' => 'INT'])`` should be cleaned up
-  - Replaced `MIGRATION_PATH` with YAML configuration for the generation path and optional namespace. New migrations remain global by default and always keep the `Migration_` prefix.
+A history of all changes can be found on the [releases page](https://github.com/patricknelson/silverstripe-migrations/releases).
 
 
 ## To Do
