@@ -1,7 +1,7 @@
 # Silverstripe Database Migrations
 Facilitates atomic database migrations in Silverstripe. Inspired by [Laravel's migration capability](http://laravel.com/docs/master/migrations), this relatively simple module works as an augmentation to the existing `dev/build` in Silverstripe.
 
-Silverstripe's database schema is ***declarative***, where code defines what the state of the database _currently should be_ and the system will take steps to match that declared state (done via `dev/build`). Database migrations offer a method to extend this by ***imperatively*** changing database state progressively _over time_. This makes it easier to rename columns without losing data, combine multiple columns, or even change the format of data without leaving behind legacy code. It helps keep you things tidy!
+Silverstripe's database schema is ***declarative***, where code defines what the state of the database _currently should be_ and the system will take steps to match that declared state (done via `dev/build`). Database migrations offer a method to extend this by ***imperatively*** changing database state progressively _over time_. This makes it easier to rename columns without losing data, combine multiple columns, or even change the format of data without leaving behind legacy code. It helps you keep things tidy!
 
 
 ## Installation
