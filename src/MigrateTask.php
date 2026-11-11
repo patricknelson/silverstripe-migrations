@@ -186,6 +186,7 @@ class MigrateTask extends BuildTask {
 
             // Run migration.
             $this->output("Migrating: $baseName...", false);
+
             /* @var $instance Migration */
             $instance = new $className();
             if (!$instance->isObsolete()) {
@@ -200,7 +201,7 @@ class MigrateTask extends BuildTask {
             $migration->Stamp = time();
             $migration->write();
 
-            $this->output(" done!");
+            $this->output(' done!');
         }
     }
 
@@ -219,6 +220,8 @@ class MigrateTask extends BuildTask {
 
         // Go through each of the most recent migrations and run their ->down() method.
         foreach($lastMigrations as $baseName => $className) {
+            $this->output("Reversing: $baseName...", false);
+
             /* @var $instance Migration */
             $instance = new $className();
             if (!$instance->isObsolete()) {
@@ -228,7 +231,7 @@ class MigrateTask extends BuildTask {
             // Remove this migration from the database now.
             DatabaseMigrations::get()->filter('BaseName', $baseName)->first()->delete();
 
-            $this->output("Reversed: $baseName");
+            $this->output(' done!');
         }
     }
 
